@@ -1,0 +1,1 @@
+﻿// TODO: Service responsible for generating images in real-time (e.g. for scoreboards)

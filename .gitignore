@@ -1,0 +1,5 @@
+﻿node_modules
+dist
+compose.yaml
+.git
+package-lock.json

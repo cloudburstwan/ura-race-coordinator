@@ -1,0 +1,9 @@
+services:
+  app:
+    container_name: ura-race-coodinator
+    build: .
+    restart: unless-stopped
+    environment:
+      - DISCORD_TOKEN=
+      - GUILD_ID=
+      - RACE_STAFF_ROLE_ID=
