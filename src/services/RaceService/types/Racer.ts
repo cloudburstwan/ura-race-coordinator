@@ -2,8 +2,9 @@
 
 export default class Racer {
     public memberId: Snowflake;
+    public characterId: string;
     public name: string;
-    public score: number = 0;
+    public scores: number[] = [];
     public mood: RacerMood = RacerMood.Normal;
 
     public skillUsedCount: number = 0;

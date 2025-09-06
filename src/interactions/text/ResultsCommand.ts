@@ -1,13 +1,15 @@
 ﻿import TextInteraction, {TextCommandBuilder} from "../../types/TextInteraction";
 import {Message} from "discord.js";
 import DiscordClient from "../../DiscordClient";
+import {RacerMood} from "../../services/RaceService/types/Racer";
 
-const racerListRegex = /(.+)/g;
+const nonGradedRacerListRegex = /(.+)/g;
+const gradedRacerListRegex = /(.+) ?- ?(\d+)/g
 
 export default class ResultsCommand extends TextInteraction {
     public info = new TextCommandBuilder()
         .setName("results")
-        .setRegexMatch(/!results/g)
+        .setRegexMatch(/!results (.+)/g)
         .addRole(process.env.RACE_STAFF_ROLE_ID);
 
     override async execute(message: Message, regexMatch: RegExpExecArray, client: DiscordClient) {
@@ -18,63 +20,224 @@ export default class ResultsCommand extends TextInteraction {
 
         let referencedMessage = await message.fetchReference();
 
+        let mode = regexMatch[1];
 
-        if (!referencedMessage.content.split("\n").every(line => {
-            racerListRegex.lastIndex = 0;
-            return racerListRegex.test(line)
-        })) {
-            await message.reply("The message you replied to doesn't look like a list of racers and their rolled numbers. Please try again!");
-            return;
-        }
+        if (mode == "none") {
+            if (!referencedMessage.content.split("\n").every(line => {
+                nonGradedRacerListRegex.lastIndex = 0;
+                return nonGradedRacerListRegex.test(line)
+            })) {
+                await message.reply("The message you replied to doesn't look like a list of racers. Please try again!");
+                return;
+            }
 
-        let racers = referencedMessage.content.split("\n").map(line => {
-            racerListRegex.lastIndex = 0;
-            let match = racerListRegex.exec(line);
+            let racers = referencedMessage.content.split("\n").map(line => {
+                nonGradedRacerListRegex.lastIndex = 0;
+                let match = nonGradedRacerListRegex.exec(line);
 
-            return {
-                name: match[1].trim(),
-                numbers: [Math.floor(Math.random() * 100) + 1, Math.floor(Math.random() * 100) + 1]
-            };
-        }).sort(() => Math.floor(Math.random() * 2) == 1 ? -1 : 1);
+                return {
+                    name: match[1].trim(),
+                    numbers: [Math.floor(Math.random() * 100) + 1, Math.floor(Math.random() * 100) + 1]
+                };
+            }).sort(() => Math.floor(Math.random() * 2) == 1 ? -1 : 1);
 
-        let results = racers.map(racer => {
-            return Object.assign({
-                difference: Math.abs(racer.numbers[0] - racer.numbers[1])
-            }, racer);
-        }).sort((a, b) => a.difference < b.difference ? -1 : 1);
+            let results = racers.map(racer => {
+                return Object.assign({
+                    difference: Math.abs(racer.numbers[0] - racer.numbers[1])
+                }, racer);
+            }).sort((a, b) => a.difference < b.difference ? -1 : 1);
 
-        let response = [];
-        let offset = -1;
-        for (let place in results) {
-            let index = parseInt(place);
-            let distanceMarker = "";
-            if (index >= 1 && results[index-1].numbers[0] == results[index].numbers[0] && results[index-1].numbers[1] == results[index].numbers[1]) {
-                // Dead heat
-                offset++;
-                distanceMarker = "DEAD HEAT"
-            } else if (index >= 1) {
-                switch (Math.abs(results[index].difference - results[index-1].difference)) {
-                    case 0:
-                        distanceMarker = "PHOTO";
+            let response = [];
+            let offset = -1;
+            for (let place in results) {
+                let index = parseInt(place);
+                let distanceMarker = "";
+                if (index >= 1 && results[index - 1].numbers[0] == results[index].numbers[0] && results[index - 1].numbers[1] == results[index].numbers[1]) {
+                    // Dead heat
+                    offset++;
+                    distanceMarker = "DEAD HEAT"
+                } else if (index >= 1) {
+                    switch (Math.abs(results[index].difference - results[index - 1].difference)) {
+                        case 0:
+                            distanceMarker = "PHOTO";
+                            break;
+                        case 1:
+                            distanceMarker = "NOSE";
+                            break;
+                        case 2:
+                            distanceMarker = "HEAD";
+                            break;
+                        case 3:
+                        case 4:
+                            distanceMarker = "NECK"
+                            break;
+                        default:
+                            distanceMarker = `${roundToQuarter((results[index].difference - results[index - 1].difference) / 10)}L`;
+                    }
+                }
+                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} (**numbers:** [${results[index].numbers.join(", ")}], **diff:** ${results[index].difference}) ${index >= 1 ? `**margin diff:** ${Math.min(50, results[index].difference - results[index - 1].difference) / 10}L **margin:** ${distanceMarker}` : ""}`);
+            }
+
+            await message.reply(response.join("\n"));
+        } else if (["g3", "g2", "g1"].includes(mode)) {
+            // TODO: Graded mode
+            if (!referencedMessage.content.split("\n").every(line => {
+                gradedRacerListRegex.lastIndex = 0;
+                return gradedRacerListRegex.test(line)
+            })) {
+                await message.reply("The message you replied to doesn't look like a list of racers and the amount of skills they've used. Please try again!");
+                return;
+            }
+
+            let racers = referencedMessage.content.split("\n").map(line => {
+                gradedRacerListRegex.lastIndex = 0;
+                let match = gradedRacerListRegex.exec(line);
+
+                let moodRandom = randomInt(1, 20);
+                let mood: RacerMood = RacerMood.Normal;
+                if (moodRandom <= 4) mood = RacerMood.Awful; else
+                if (moodRandom <= 8) mood = RacerMood.Bad; else
+                if (moodRandom <= 12) mood = RacerMood.Normal; else
+                if (moodRandom <= 16) mood = RacerMood.Good; else
+                if (moodRandom <= 20) mood = RacerMood.Great;
+
+                let stages: number[] = [];
+
+                for (let i = 0; i < 4; i++) {
+                    if (mode == "g3") {
+                        stages.push(randomInt(5, 10) + randomInt(5, 10));
+                    } else if (mode == "g2") {
+                        stages.push(randomInt(6, 10) + randomInt(6, 10));
+                    } else if (mode == "g1") {
+                        stages.push(randomInt(8, 10) + randomInt(8, 10));
+                    }
+                }
+
+                let baseScore = 0;
+                for (let value of stages) {
+                    baseScore += value;
+                }
+
+                let skillsUsed = parseInt(match[2].trim());
+                let skillBonus = rollXTimes(skillsUsed, 1, 20) / skillsUsed;
+
+                if (mode == "g3") {
+                    let b = 5;
+                    let p = 0.1;
+                    let value = b * p;
+                    let overflow = skillsUsed > 10 ? skillsUsed - 10 : 0;
+
+                    if (overflow > 0) {
+                        for (let i = 0; i < overflow; i++) {
+                            b = b - value;
+                            console.log(b);
+                        }
+                    }
+
+                    skillBonus = skillBonus + b;
+                } else if (mode == "g2") {
+                    let b = 3;
+                    let p = 0.05;
+                    let value = b * p;
+                    let overflow = skillsUsed > 10 ? skillsUsed - 10 : 0;
+
+                    if (overflow > 0) {
+                        for (let i = 0; i < overflow; i++) {
+                            b = b - value;
+                        }
+                    }
+
+                    skillBonus = skillBonus + b;
+                    console.log(skillBonus);
+                    console.log("===========================")
+                }
+
+                let moodPercentageModifier = 0.05;
+
+                if (mode == "g2") {
+                    moodPercentageModifier = 0.03;
+                }
+                if (mode == "g1") {
+                    moodPercentageModifier = 0.02;
+                }
+
+                let moodPercentage = moodPercentageModifier * mood;
+
+                let scoreModifier = (baseScore + skillBonus) * moodPercentage;
+                let score = (baseScore + skillBonus) + scoreModifier;
+
+                return {
+                    name: match[1].trim(),
+                    baseScore,
+                    mood,
+                    moodPercentage,
+                    skillsUsed,
+                    skillBonus,
+                    stages,
+                    scoreModifier,
+                    score: Math.round(score * 10) / 10
+                };
+            }).sort(() => Math.floor(Math.random() * 2) == 1 ? -1 : 1);
+
+            let results = racers.sort((a, b) => a.score > b.score ? -1 : 1);
+
+            let response = [];
+            let offset = -1;
+            for (let place in results) {
+                let index = parseInt(place);
+                let distanceMarker = "";
+                if (index >= 1 && results[index - 1].score == results[index].score) {
+                    // Dead heat
+                    offset++;
+                    distanceMarker = "DEAD HEAT"
+                } else if (index >= 1) {
+                    switch (Math.abs(results[index].score - results[index - 1].score)) {
+                        case 0:
+                            distanceMarker = "PHOTO";
+                            break;
+                        case 1:
+                            distanceMarker = "NOSE";
+                            break;
+                        case 2:
+                            distanceMarker = "HEAD";
+                            break;
+                        case 3:
+                        case 4:
+                            distanceMarker = "NECK"
+                            break;
+                        default:
+                            distanceMarker = `${roundToQuarter(Math.abs(results[index].score - results[index - 1].score) / 10)}L`;
+                    }
+                }
+                let moodName = "";
+                switch (results[index].mood) {
+                    case RacerMood.Awful:
+                        moodName = "AWFUL";
                         break;
-                    case 1:
-                        distanceMarker = "NOSE";
+                    case RacerMood.Bad:
+                        moodName = "BAD";
                         break;
-                    case 2:
-                        distanceMarker = "HEAD";
+                    case RacerMood.Normal:
+                        moodName = "NORMAL";
                         break;
-                    case 3:
-                    case 4:
-                        distanceMarker = "NECK"
+                    case RacerMood.Good:
+                        moodName = "GOOD";
+                        break;
+                    case RacerMood.Great:
+                        moodName = "GREAT";
                         break;
                     default:
-                        distanceMarker = `${roundToQuarter((results[index].difference - results[index-1].difference) / 10)}L`;
+                        moodName = "UNKNOWN";
                 }
-            }
-            response.push(`**${index-offset}${numberSuffix(index-offset)}**: ${results[index].name} (**numbers:** [${results[index].numbers.join(", ")}], **diff:** ${results[index].difference}) ${index >= 1 ? `**margin diff:** ${Math.min(50, results[index].difference - results[index-1].difference) / 10}L **margin:** ${distanceMarker}` : ""}`);
-        }
 
-        await message.reply(response.join("\n"));
+                //response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **score:** ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.min(50, Math.abs(results[index].score - results[index - 1].score)) / 10}L **margin:** ${distanceMarker}` : ""}`);
+                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **score:** ${results[index].score})`);
+            }
+
+            await message.reply(response.join("\n"));
+        } else {
+            await message.reply(`Unknown mode: "${mode}". Valid modes are: "none", "g1", "g2", and "g3"`);
+        }
     }
 }
 
@@ -90,4 +253,18 @@ function numberSuffix(number: number) {
 
 function roundToQuarter(number: number): number {
     return Math.round(number*4)/4;
+}
+
+function randomInt(min: number, max: number) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function rollXTimes(times: number, min: number, max: number) {
+    let result = 0;
+    for (let i = 0; i < times; i++) {
+        result += randomInt(min, max);
+    }
+    return result;
 }
