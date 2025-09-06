@@ -113,7 +113,7 @@ export default class ResultsCommand extends TextInteraction {
                 }
 
                 let skillsUsed = parseInt(match[2].trim());
-                let skillBonus = rollXTimes(skillsUsed, 1, 20) / skillsUsed;
+                let skillBonus = skillsUsed > 0 ? rollXTimes(skillsUsed, 1, 20) / skillsUsed : 0;
 
                 let moodPercentageModifier = 0.02;
 
