@@ -79,7 +79,7 @@ export default class ResultsCommand extends TextInteraction {
             }
 
             await message.reply(response.join("\n"));
-        } else if (["g3", "g2", "g1"].includes(mode)) {
+        } else if (["graded"].includes(mode)) {
             // TODO: Graded mode
             if (!referencedMessage.content.split("\n").every(line => {
                 gradedRacerListRegex.lastIndex = 0;
@@ -104,13 +104,7 @@ export default class ResultsCommand extends TextInteraction {
                 let stages: number[] = [];
 
                 for (let i = 0; i < 4; i++) {
-                    if (mode == "g3") {
-                        stages.push(randomInt(5, 10) + randomInt(5, 10));
-                    } else if (mode == "g2") {
-                        stages.push(randomInt(6, 10) + randomInt(6, 10));
-                    } else if (mode == "g1") {
-                        stages.push(randomInt(8, 10) + randomInt(8, 10));
-                    }
+                    stages.push(randomInt(8, 10) + randomInt(8, 10));
                 }
 
                 let baseScore = 0;
@@ -121,45 +115,7 @@ export default class ResultsCommand extends TextInteraction {
                 let skillsUsed = parseInt(match[2].trim());
                 let skillBonus = rollXTimes(skillsUsed, 1, 20) / skillsUsed;
 
-                if (mode == "g3") {
-                    let b = 5;
-                    let p = 0.1;
-                    let value = b * p;
-                    let overflow = skillsUsed > 10 ? skillsUsed - 10 : 0;
-
-                    if (overflow > 0) {
-                        for (let i = 0; i < overflow; i++) {
-                            b = b - value;
-                            console.log(b);
-                        }
-                    }
-
-                    skillBonus = skillBonus + b;
-                } else if (mode == "g2") {
-                    let b = 3;
-                    let p = 0.05;
-                    let value = b * p;
-                    let overflow = skillsUsed > 10 ? skillsUsed - 10 : 0;
-
-                    if (overflow > 0) {
-                        for (let i = 0; i < overflow; i++) {
-                            b = b - value;
-                        }
-                    }
-
-                    skillBonus = skillBonus + b;
-                    console.log(skillBonus);
-                    console.log("===========================")
-                }
-
-                let moodPercentageModifier = 0.05;
-
-                if (mode == "g2") {
-                    moodPercentageModifier = 0.03;
-                }
-                if (mode == "g1") {
-                    moodPercentageModifier = 0.02;
-                }
+                let moodPercentageModifier = 0.02;
 
                 let moodPercentage = moodPercentageModifier * mood;
 
@@ -236,7 +192,7 @@ export default class ResultsCommand extends TextInteraction {
 
             await message.reply(response.join("\n"));
         } else {
-            await message.reply(`Unknown mode: "${mode}". Valid modes are: "none", "g1", "g2", and "g3"`);
+            await message.reply(`Unknown mode: "${mode}". Valid modes are: "none", "graded"`);
         }
     }
 }
