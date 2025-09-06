@@ -54,7 +54,7 @@ export default class DisqualifyCommand extends SlashCommandInteraction {
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                     )
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("This disqualification is final and not up for debate. You may attempt to join another graded race **next week**, but you must turn up for any non-graded races you sign up for or you will be disqualified again."),
+                        new TextDisplayBuilder().setContent("You may attempt to join another graded race **next week**, but you must turn up for any non-graded races you sign up for or you will be disqualified again."),
                     )
                 break;
             case "GRADED":
@@ -69,12 +69,15 @@ export default class DisqualifyCommand extends SlashCommandInteraction {
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                     )
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("This disqualification is final and not up for debate. You may attempt to join another graded race **in 30 days**, but you must turn up for any graded races you sign up for or you will be made ineligible again."),
+                        new TextDisplayBuilder().setContent("You may attempt to join another graded race **in 30 days**, but you must turn up for any graded races you sign up for or you will be made ineligible again."),
                     )
                 break;
         }
 
         component
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent("If you believe you have a valid reason for not showing up to the race without informing us prior to it beginning, please contact a Race Staff member (someone with the Race Planner role) and explain your situation."),
+            )
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent("Please remember that signing up is equal to telling us that you intend to join the race, and failing to show up not only causes other racers to be confused on who is actually participating, but also delays the race as a whole."),
             )
