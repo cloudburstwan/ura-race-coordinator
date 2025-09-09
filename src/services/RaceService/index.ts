@@ -109,7 +109,10 @@ export default class RaceService {
             )
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent("### Current Racers:"),
-            )
+            );
+
+        if (race.flag == "URARA_MEMORIAM")
+            component.setAccentColor(16745656);
 
         if (race.racers.length == 0) {
             component.addTextDisplayComponents(
