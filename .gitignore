@@ -3,3 +3,5 @@ dist
 compose.yaml
 .git
 package-lock.json
+config.json
+emote_lang.json

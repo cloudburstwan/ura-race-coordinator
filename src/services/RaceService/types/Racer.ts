@@ -2,18 +2,39 @@
 
 export default class Racer {
     public memberId: Snowflake;
-    public characterId: string;
-    public name: string;
+    public characterId: string = null;
+    public characterName: string;
+    public status: RacerStatus = RacerStatus.Normal;
     public scores: number[] = [];
     public mood: RacerMood = RacerMood.Normal;
 
-    public skillUsedCount: number = 0;
+    public skillRolls: number[] = [];
     public debuffCount: number = 0;
 
-    constructor(member: GuildMember, name: string) {
-        this.memberId = member.id;
-        this.name = name;
+    constructor(memberId: Snowflake, characterName: string) {
+        this.memberId = memberId;
+        this.characterName = characterName
     }
+
+    markAsDNF() {
+        this.status = RacerStatus.NotFinishing;
+    }
+
+    static fromDB(data: Racer) {
+        let result = new this(data.memberId, data.characterName);
+
+        result.scores = data.scores;
+        result.mood = data.mood;
+        result.skillRolls = data.skillRolls;
+        result.debuffCount = data.debuffCount;
+
+        return result;
+    }
+}
+
+export enum RacerStatus {
+    Normal,
+    NotFinishing
 }
 
 export enum RacerMood {

@@ -1,10 +1,11 @@
 ﻿import SlashCommandInteraction from "../../types/SlashCommandInteraction";
 import {
-    ChatInputCommandInteraction,
-    ContainerBuilder, MessageFlagsBitField,
+    ActionRowBuilder,
+    ChatInputCommandInteraction, ComponentBuilder,
+    ContainerBuilder, MessageActionRowComponentBuilder, MessageFlagsBitField, SelectMenuOptionBuilder,
     SeparatorBuilder,
     SeparatorSpacingSize,
-    SlashCommandBuilder,
+    SlashCommandBuilder, StringSelectMenuBuilder,
     TextDisplayBuilder
 } from "discord.js";
 import DiscordClient from "../../DiscordClient";
@@ -96,6 +97,18 @@ export default class DisqualifyCommand extends SlashCommandInteraction {
 
             await interaction.reply({
                 content: "Successfully sent disqualification message to the user.",
+                components: [
+                    new ActionRowBuilder<MessageActionRowComponentBuilder>()
+                        .addComponents(
+                            new StringSelectMenuBuilder()
+                                .setCustomId("1c230ec4d87548b1e1209832c80a7ff6")
+                                .addOptions(
+                                    new SelectMenuOptionBuilder()
+                                        .setLabel("Nosy Crocodile")
+                                        .setValue("1269e51c69ed4e49f476ac6f719e5656"),
+                                ),
+                        ),
+                ],
                 flags: MessageFlagsBitField.Flags.Ephemeral
             });
         } catch (e) {

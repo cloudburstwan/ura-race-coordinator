@@ -1,4 +1,5 @@
 ﻿import {Snowflake} from "discord.js";
+import {ObjectId} from "mongodb";
 
 export default class Character {
     public name: string;
@@ -16,10 +17,15 @@ export default class Character {
             long: AptitudeLevel.G
         }
     };
+    public tickets: Tickets = {
+        aptitudeReselection: 1 // TODO: When adding aptitudes to creation, set this to 0!
+    }
+    public _id?: ObjectId;
 
-    constructor(name: string, memberId: Snowflake) {
+    constructor(name: string, memberId: Snowflake, type: CharacterType) {
         this.name = name;
         this.memberId = memberId;
+        this.type = type;
     }
 
     setSurfaceAptitudes(dirt: AptitudeLevel, turf: AptitudeLevel) {
@@ -32,6 +38,16 @@ export default class Character {
         this.aptitudes.distance.mile = mile;
         this.aptitudes.distance.medium = medium;
         this.aptitudes.distance.long = long;
+    }
+
+    static fromDB(data: Character) {
+        let result = new this(data.name, data.memberId, data.type);
+
+        result.aptitudes = data.aptitudes;
+        result.tickets = data.tickets;
+        result._id = data._id;
+
+        return result;
     }
 }
 
@@ -48,18 +64,22 @@ interface Aptitude {
     }
 }
 
-enum AptitudeLevel {
-    G,
-    F,
-    E,
-    D,
-    C,
-    B,
+interface Tickets {
+    aptitudeReselection: number
+}
+
+export enum AptitudeLevel {
+    G = -6,
+    F = -5,
+    E = -4,
+    D = -3,
+    C = -2,
+    B = -1,
     A,
     S
 }
 
-enum CharacterType {
+export enum CharacterType {
     Domestic,
     International
 }
