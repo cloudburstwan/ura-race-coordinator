@@ -3,6 +3,7 @@ import Racer from "./Racer";
 import DiscordClient from "../../../DiscordClient";
 import {DisqualificationType} from "./Disqualification";
 import {ObjectId} from "mongodb";
+import {rollXTimes} from "../../../utils";
 
 export default class Race {
     public name: string;
@@ -60,6 +61,52 @@ export default class Race {
         this.racers.splice(index, 1);
     }
 
+    getResults() {
+        if (this.type == RaceType.NonGraded) {
+            // TODO: Non-graded results
+        } else {
+            let placements: Placement[] = [];
+
+            this.racers.forEach(racer => {
+                for (let i = 0; i < 5; i++) {
+                    racer.scores.push(0);
+                }
+
+                racer.overallScore = 0;
+
+                // TODO: Actually write this code
+            });
+
+            this.racers.sort(() => Math.floor(Math.random() * 2) == 1 ? -1 : 1); // Tiebreak
+            this.racers.sort((a, b) => a.overallScore > b.overallScore ? -1 : 1);
+
+            let offset = -1;
+            for (let place in this.racers) {
+                let index = parseInt(place);
+                let marginType: MarginType = MarginType.None;
+                let distance: number = 0;
+                if (index >= 1 && this.racers[index-1].overallScore == this.racers[index].overallScore) {
+                    marginType = MarginType.DeadHeat;
+                    offset++;
+                } else if (index >= 1) {
+                    // TODO: Write placement code
+                }
+
+                placements.push({
+                    position: index-offset,
+                    gate: (this.racers[index] as ({gate: number} & Racer)).gate,
+                    racer: this.racers[index],
+                    marginType: marginType,
+                    marginNumber: distance
+                });
+            }
+
+            console.log(placements);
+
+            return placements;
+        }
+    }
+
     public static fromDB(data: Race) {
         let result = new this(data.name, data.type, data.channelId, data.startingAt, data.surface, data.distance, data.weather, data.trackCondition, data.maxRacers, data.flag);
 
@@ -81,6 +128,25 @@ export type RaceFlag = "URARA_MEMORIAM";
 export const RaceFlagOptions: {name: string, value: RaceFlag}[] = [
     { name: "Haru Urara Memoriam", value: "URARA_MEMORIAM" }
 ]
+
+export interface Placement {
+    position: number,
+    gate: number,
+    racer: Racer
+    marginType: MarginType,
+    marginNumber: number
+}
+
+
+export enum MarginType {
+    None,
+    Number,
+    Neck,
+    Head,
+    Nose,
+    DeadHeat,
+    Distance
+}
 
 export enum RaceType {
     NonGraded,
@@ -116,10 +182,11 @@ export enum TrackConditionType {
 export enum RaceStatus {
     SignupOpen,
     SignupClosed,
-    GateOpen,
+    Started,
+    GateOpen, // TODO: Implement staging system
     Early,
     Middle,
     Late,
-    FinalSpurt,
+    FinalSpurt, // End of above!
     Ended
 }

@@ -2,6 +2,7 @@
 import {Message} from "discord.js";
 import DiscordClient from "../../DiscordClient";
 import {RacerMood} from "../../services/RaceService/types/Racer";
+import {numberSuffix, randomInt, rollXTimes, roundToQuarter} from "../../utils";
 
 const nonGradedRacerListRegex = /(.+)/g;
 const gradedRacerListRegex = /(.+) ?- ?(\d+)/g
@@ -195,32 +196,4 @@ export default class ResultsCommand extends TextInteraction {
             await message.reply(`Unknown mode: "${mode}". Valid modes are: "none", "graded"`);
         }
     }
-}
-
-function numberSuffix(number: number) {
-    if (number.toString().endsWith("1") && !number.toString().endsWith("11"))
-        return "st";
-    if (number.toString().endsWith("2") && !number.toString().endsWith("12"))
-        return "nd";
-    if (number.toString().endsWith("3") && !number.toString().endsWith("13"))
-        return "rd";
-    return "th";
-}
-
-function roundToQuarter(number: number): number {
-    return Math.round(number*4)/4;
-}
-
-function randomInt(min: number, max: number) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function rollXTimes(times: number, min: number, max: number) {
-    let result = 0;
-    for (let i = 0; i < times; i++) {
-        result += randomInt(min, max);
-    }
-    return result;
 }

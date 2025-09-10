@@ -17,6 +17,7 @@ import {
     TextChannel,
     TextDisplayBuilder
 } from "discord.js";
+import {RacerMood} from "./types/Racer";
 
 export default class RaceService {
     public races: Race[] = [];
@@ -31,7 +32,7 @@ export default class RaceService {
         this.loadRaceData()
     }
 
-    private async updateRaceMessage(race: Race, client: DiscordClient, newRace: boolean = false): Promise<Snowflake | void> {
+    private async updateRaceMessage(race: Race, client: DiscordClient, newRace: boolean = false, useGate: boolean = false): Promise<Snowflake | void> {
         let surfaceEmoji: string;
         switch (race.surface) {
             case SurfaceType.Dirt:
@@ -121,7 +122,7 @@ export default class RaceService {
         } else {
             for (let racerIndex in race.racers) {
                 component.addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`[#${parseInt(racerIndex) + 1}] **${race.racers[racerIndex].characterName}** (<@${race.racers[racerIndex].memberId}>)`),
+                    new TextDisplayBuilder().setContent(`[#${useGate ? race.racers[racerIndex].gate : parseInt(racerIndex) + 1}] **${race.racers[racerIndex].characterName}** (<@${race.racers[racerIndex].memberId}>)`),
                 );
             }
         }
@@ -238,6 +239,63 @@ export default class RaceService {
         await this.updateRaceMessage(race, this.Client);
     }
 
+    public async startRace(raceId: string, client: DiscordClient) {
+        // Starts a race.
+        let race = this.races.find(race => race._id.toString() == raceId);
+
+        if (!race)
+            throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
+
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status))
+            throw new RaceError("RACE_ALREADY_STARTED", "Cannot start a race that has already started");
+
+        race.status = RaceStatus.Started;
+
+        race.racers.forEach((racer, index) => {
+            racer.gate = index+1;
+
+            if (race.flag == "URARA_MEMORIAM") {
+                racer.assignMood(RacerMood.Great);
+            } else {
+                racer.assignMood();
+            }
+        });
+
+        await this.DataService.races.updateOne({ _id: race._id }, { $set: race });
+
+        await this.updateRaceMessage(race, client, false, true);
+
+        return race;
+    }
+
+    public async getResults(raceId: string) {
+        let race = this.races.find(race => race._id.toString() == raceId);
+
+        if (!race)
+            throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
+
+        if ([RaceStatus.SignupOpen, RaceStatus.SignupClosed, RaceStatus.Ended].includes(race.status))
+            throw new RaceError("RACE_NOT_YET_STARTED_OR_OVER", "Cannot get results for a race that has not yet started or is already over");
+
+        return race.getResults();
+    }
+
+    public async endRace(raceId: string, client: DiscordClient) {
+        let race = this.races.find(race => race._id.toString() == raceId);
+
+        if (!race)
+            throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
+
+        if ([RaceStatus.SignupOpen, RaceStatus.SignupClosed, RaceStatus.Ended].includes(race.status))
+            throw new RaceError("RACE_NOT_YET_STARTED_OR_OVER", "Cannot end a race that has not yet started or is already over");
+
+        race.status = RaceStatus.Ended;
+
+        await this.DataService.races.updateOne({ _id: race._id }, { $set: race });
+
+        await this.updateRaceMessage(race, client);
+    }
+
     private async loadRaceData() {
         this.races = (await this.DataService.races.find().toArray()).map(race => Race.fromDB(race));
         console.log(this.races);
@@ -256,4 +314,4 @@ export class RaceError extends Error {
 }
 
 type RaceErrorCode = "RACE_NOT_FOUND" | "RACE_SIGNUP_CLOSED_OR_FULL" | "RACE_IN_PROGRESS_OR_OVER" | "CHARACTER_ALREADY_JOINED" | "MEMBER_NOT_JOINED" |
-                     "BAD_CHARACTER_NAME"
+                     "BAD_CHARACTER_NAME" | "RACE_ALREADY_STARTED" | "RACE_NOT_YET_STARTED_OR_OVER"
