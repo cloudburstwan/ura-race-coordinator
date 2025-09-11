@@ -64,6 +64,7 @@ export default class Race {
     getResults() {
         if (this.type == RaceType.NonGraded) {
             // TODO: Non-graded results
+            return [];
         } else {
             let placements: Placement[] = [];
 

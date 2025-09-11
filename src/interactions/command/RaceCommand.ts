@@ -1,6 +1,7 @@
 ﻿import SlashCommandInteraction from "../../types/SlashCommandInteraction";
 import {
-    ActionRowBuilder, AttachmentBuilder,
+    ActionRowBuilder,
+    AttachmentBuilder,
     AutocompleteInteraction,
     ButtonBuilder,
     ButtonInteraction,
@@ -166,7 +167,37 @@ export default class CharacterCommand extends SlashCommandInteraction {
                 .setRequired(true)
                 .setAutocomplete(true)
             )
-        );
+        )
+        .addSubcommand(subcommand => subcommand
+            .setName("disqualify")
+            .setDescription("Disqualify a racer from a race")
+            .addStringOption(option => option
+                .setName("race")
+                .setDescription("The race that you want to set skills for")
+                .setRequired(true)
+                .setAutocomplete(true)
+            )
+            .addStringOption(option => option
+                .setName("character")
+                .setDescription("The character you want to set the skills used count for")
+                .setRequired(true)
+                .setAutocomplete(true)
+            )
+            .addStringOption(option => option
+                .setName("reason")
+                .setDescription("The reason for disqualification")
+                .setRequired(true)
+                .addChoices([
+                    // TODO: Reasons
+                ])
+            )
+            .addStringOption(option => option
+                .setName("message")
+                .setDescription("Optional message to be passed to the user")
+                .setRequired(false)
+            )
+        )
+    ;
 
     async execute(interaction: ChatInputCommandInteraction, client: DiscordClient) {
         let subcommand = interaction.options.getSubcommand();
@@ -381,7 +412,7 @@ export default class CharacterCommand extends SlashCommandInteraction {
                 }
 
                 component.addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`[#${parseInt(index+1)}] **${race.racers[index].characterName}** ${moodEmojiCombo}`),
+                    new TextDisplayBuilder().setContent(`[#${parseInt(index)+1}] **${race.racers[index].characterName}** ${moodEmojiCombo}`),
                 );
 
                 mentions.push(`<@${race.racers[index].memberId}>`);
@@ -526,8 +557,13 @@ export default class CharacterCommand extends SlashCommandInteraction {
 
         let component = generateComponent(false);
         let message = await interaction.reply({
-            components: [ component ],
-            flags: MessageFlagsBitField.Flags.IsComponentsV2
+            //components: [ component ],
+            //flags: MessageFlagsBitField.Flags.IsComponentsV2
+            content: "Successfully internally ended the race. Please generate a race using the following information I have for this race."
+        });
+
+        await (await message.fetch()).reply({
+            content: `${race.racers.map(racer => `${racer.characterName}${race.type != RaceType.NonGraded ? ` - ${racer.skillRolls.length}` : ""}`).join("\n")}`
         });
 
         function listenForButtonPress() {
@@ -678,7 +714,7 @@ export default class CharacterCommand extends SlashCommandInteraction {
             }
         }
 
-        listenForButtonPress();
+        //listenForButtonPress();
     }
 
     async autocomplete(interaction: AutocompleteInteraction, client: DiscordClient): Promise<void> {
@@ -694,16 +730,22 @@ export default class CharacterCommand extends SlashCommandInteraction {
                         return [RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status);
                     }).map(race => {
                         return {name: race.name, value: race._id.toString()}
+                    }).filter(race => {
+                        return race.name.includes(focusedValue.value);
                     }));
-                } else if (["end", "set-skills"].includes(interaction.options.getSubcommand())) {
+                } else if (["end", "set-skills", "disqualify"].includes(interaction.options.getSubcommand())) {
                     await interaction.respond(client.services.race.races.filter(race => {
                         return ![RaceStatus.SignupOpen, RaceStatus.SignupClosed, RaceStatus.Ended].includes(race.status);
                     }).map(race => {
                         return {name: race.name, value: race._id.toString()}
+                    }).filter(race => {
+                        return race.name.includes(focusedValue.value);
                     }));
                 } else {
                     await interaction.respond(client.services.race.races.map(race => {
                         return {name: race.name, value: race._id.toString()}
+                    }).filter(race => {
+                        return race.name.includes(focusedValue.value);
                     }));
                 }
                 break;
