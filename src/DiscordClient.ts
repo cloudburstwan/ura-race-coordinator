@@ -11,13 +11,14 @@
     Routes, Snowflake
 } from "discord.js";
 import path from "path";
-import { readdirSync } from "node:fs";
+import {existsSync, readdirSync} from "node:fs";
 import TextInteraction from "./types/TextInteraction";
 import SlashCommandInteraction from "./types/SlashCommandInteraction";
 import ButtonPressInteraction from "./types/ButtonPressInteraction";
 import Services from "./services";
 import ModalInteraction from "./types/ModalInteraction";
 import getServices from "./services";
+import SlashCommandWithSubcommandsInteraction from "./types/SlashCommandWithSubcommandsInteraction";
 
 export default class DiscordClient extends Client {
     public config: Config;
@@ -78,12 +79,22 @@ export default class DiscordClient extends Client {
 
     private async loadSlashCommandInteractions() {
         let dirPath = path.join(this.interactionsPath, "command");
-        let directory = readdirSync(dirPath).filter(file => file.endsWith(".js"));
+        let directory = readdirSync(dirPath);
 
         let commands = [];
 
         for (let file of directory) {
-            const interactionImport = await import(path.join(dirPath, file));
+            let interactionImport;
+            if (file.endsWith(".js")) {
+                interactionImport = await import(path.join(dirPath, file));
+            } else {
+                // Try for file/index.js
+                if (existsSync(path.join(dirPath, file, "index.js"))) {
+                    interactionImport = await import(path.join(dirPath, file, "index.js"))
+                } else {
+                    continue; // No valid option to continue with
+                }
+            }
 
             if (!interactionImport.default) return; // No default export.
             const interaction = new interactionImport.default as SlashCommandInteraction;
@@ -91,10 +102,15 @@ export default class DiscordClient extends Client {
             if (!interaction.info) return;
             if (!interaction.execute) return;
 
+            if (interaction instanceof SlashCommandWithSubcommandsInteraction) {
+                await interaction.loadSubcommands(path.join(dirPath, file));
+            }
+
             this.interactions.command.set(interaction.info.toJSON().name, interaction);
             commands.push(interaction.info.toJSON());
 
             console.log(interaction);
+
         }
 
         const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
@@ -237,6 +253,9 @@ interface Config {
         announce: Snowflake,
         jp_announce: Snowflake,
         overseas_announce: Snowflake,
-        daily_announce: Snowflake
+        daily_announce: Snowflake,
+        events: {
+            opera_doto_wedding_guest_chat: Snowflake
+        }
     }
 }

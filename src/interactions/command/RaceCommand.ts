@@ -170,7 +170,7 @@ export default class CharacterCommand extends SlashCommandInteraction {
         )
         .addSubcommand(subcommand => subcommand
             .setName("disqualify")
-            .setDescription("Disqualify a racer from a race")
+            .setDescription("Disqualify a racer from a race. Announces this to the public")
             .addStringOption(option => option
                 .setName("race")
                 .setDescription("The race that you want to set skills for")
@@ -189,6 +189,36 @@ export default class CharacterCommand extends SlashCommandInteraction {
                 .setRequired(true)
                 .addChoices([
                     // TODO: Reasons
+                ])
+            )
+            .addStringOption(option => option
+                .setName("message")
+                .setDescription("Optional message to be passed to the user")
+                .setRequired(false)
+            )
+        )
+        .addSubcommand(subcommand => subcommand
+            .setName("dnf")
+            .setDescription("Mark a racer as Did Not Finish. Unlike `disqualify`, this is done silently")
+            .addStringOption(option => option
+                .setName("race")
+                .setDescription("The race that you want to mark the racer as Did Not Finish in")
+                .setRequired(true)
+                .setAutocomplete(true)
+            )
+            .addStringOption(option => option
+                .setName("character")
+                .setDescription("The character you want mark as Did Not Finish")
+                .setRequired(true)
+                .setAutocomplete(true)
+            )
+            .addStringOption(option => option
+                .setName("reason")
+                .setDescription("The reason for not finishing")
+                .setRequired(true)
+                .addChoices([
+                    { name: "Injured", value: "injured" },
+                    { name: "Other", value: "not-specified" }
                 ])
             )
             .addStringOption(option => option
@@ -217,6 +247,8 @@ export default class CharacterCommand extends SlashCommandInteraction {
                 break;
             case "end":
                 await this.subcommand_end(interaction, client);
+                break;
+            case "disqualify":
                 break;
         }
     }
@@ -623,14 +655,14 @@ export default class CharacterCommand extends SlashCommandInteraction {
 
             async function showScores() {
                 // TODO: Show result scoreboard.
-                const scoreboard = await ImageService.drawScoreboard(ScoreStatus.Final, results.map(result => result.gate), SurfaceType.Turf, "haru_final");
+                /*const scoreboard = await ImageService.drawScoreboard(ScoreStatus.Final, results.map(result => result.gate), SurfaceType.Turf, "haru_final");
 
                 const attachment = new AttachmentBuilder(scoreboard)
                     .setName("scoreboard.png");
 
                 let finalScoreboard = await channel.send({
                     files: [ attachment ]
-                });
+                });*/
 
                 const component = new ContainerBuilder()
                     .addTextDisplayComponents(
@@ -696,10 +728,10 @@ export default class CharacterCommand extends SlashCommandInteraction {
                     component.setAccentColor(16745656);
 
                 setTimeout(async () => {
-                    await finalScoreboard.reply({
+                    /*await finalScoreboard.reply({
                         components: [ component ],
                         flags: MessageFlagsBitField.Flags.IsComponentsV2
-                    });
+                    });*/
                 }, 3000);
             }
 

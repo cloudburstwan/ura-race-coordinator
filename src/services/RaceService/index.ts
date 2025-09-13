@@ -10,7 +10,7 @@ import {
     ContainerBuilder,
     GuildMember,
     MessageActionRowComponentBuilder,
-    MessageFlagsBitField,
+    MessageFlagsBitField, PublicThreadChannel,
     SeparatorBuilder,
     SeparatorSpacingSize,
     Snowflake,
@@ -79,7 +79,7 @@ export default class RaceService {
                 new TextDisplayBuilder().setContent(`**Location:** <#${race.channelId}>`),
             )
             .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`**Time:** <t:${Math.floor(race.startingTimestamp / 1000)}:F>`),
+                new TextDisplayBuilder().setContent(`**Time:** ${race.flag == "OPERA_DOTO_WEDDING_BOUQUET_THROW" ? "When the bride decides." : `<t:${Math.floor(race.startingTimestamp / 1000)}:F>`}`),
             )
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(`**Surface:** ${surfaceEmoji} ${race.surface == SurfaceType.Dirt ? "Dirt" : "Turf"}`),
@@ -149,7 +149,7 @@ export default class RaceService {
                 new TextDisplayBuilder().setContent(`-# Race ID: ${race._id}`),
             )
 
-        let channel: TextChannel;
+        let channel: TextChannel | PublicThreadChannel;
         if (race.type == RaceType.NonGraded) {
             channel = await client.guild.channels.fetch(client.config.channels.daily_announce) as TextChannel;
         } else if (race.type == RaceType.GradedDomestic) {
@@ -159,6 +159,9 @@ export default class RaceService {
         } else {
             channel = await client.guild.channels.fetch(client.config.channels.announce) as TextChannel;
         }
+
+        if (race.flag == "OPERA_DOTO_WEDDING_BOUQUET_THROW")
+            channel = await client.guild.channels.fetch(client.config.channels.events.opera_doto_wedding_guest_chat) as PublicThreadChannel;
 
         if (newRace) {
             let message = await channel.send({

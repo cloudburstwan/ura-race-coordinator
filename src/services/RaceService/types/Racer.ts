@@ -8,7 +8,7 @@ export default class Racer {
     public gate: number = 0;
     public characterId: string = null;
     public characterName: string;
-    public status: RacerStatus = RacerStatus.Normal;
+    public status: RacerStatus = RacerStatus.NotPresent;
     public scores: number[] = [];
     public mood: RacerMood = RacerMood.Normal;
     public overallScore: number = 0;
@@ -19,10 +19,6 @@ export default class Racer {
     constructor(memberId: Snowflake, characterName: string) {
         this.memberId = memberId;
         this.characterName = characterName
-    }
-
-    markAsDNF() {
-        this.status = RacerStatus.NotFinishing;
     }
 
     assignMood(mood?: RacerMood) {
@@ -55,8 +51,11 @@ export default class Racer {
 }
 
 export enum RacerStatus {
+    NotPresent,
     Normal,
-    NotFinishing
+    Injured,
+    Disqualified,
+    DNFOther
 }
 
 export enum RacerMood {

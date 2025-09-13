@@ -67,6 +67,11 @@ export function waitForMessage(channel: TextChannel | DMChannel, filter: any = (
     });
 }
 
+export function addLeadingZero(number: number) {
+    if (number < 10) return `0${number}`;
+    return `${number}`
+}
+
 export function numberSuffix(number: number) {
     if (number.toString().endsWith("1") && !number.toString().endsWith("11"))
         return "st";

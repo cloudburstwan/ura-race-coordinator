@@ -32,9 +32,9 @@ export default class Race {
         this.startingTimestamp = startingAt.getTime();
         this.surface = surface;
         this.distanceMetres = distance;
-        if (distance <= 1200)
+        if (distance <= 1400)
             this.distance = DistanceType.Sprint;
-        else if (distance <= 1600)
+        else if (distance <= 1800)
             this.distance = DistanceType.Mile;
         else if (distance <= 2200)
             this.distance = DistanceType.Medium;
@@ -125,9 +125,10 @@ export default class Race {
     }
 }
 
-export type RaceFlag = "URARA_MEMORIAM";
+export type RaceFlag = "URARA_MEMORIAM" | "OPERA_DOTO_WEDDING_BOUQUET_THROW";
 export const RaceFlagOptions: {name: string, value: RaceFlag}[] = [
-    { name: "Haru Urara Memoriam", value: "URARA_MEMORIAM" }
+    { name: "Haru Urara Memoriam", value: "URARA_MEMORIAM" },
+    { name: "Opera & Doto Wedding - Bouquet Throw", value: "OPERA_DOTO_WEDDING_BOUQUET_THROW" }
 ]
 
 export interface Placement {

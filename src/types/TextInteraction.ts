@@ -16,8 +16,6 @@ export class TextCommandBuilder {
     public match: RegExp;
     public rolesRequired: Snowflake[] = [];
 
-    constructor() {}
-
     public setName(name: string) {
         this.name = name;
         return this;
