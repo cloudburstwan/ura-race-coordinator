@@ -114,7 +114,7 @@ export default class ResultsCommand extends TextInteraction {
                 }
 
                 let skillsUsed = parseInt(match[2].trim());
-                let skillBonus = calculateGradedScore(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
+                let skillBonus = skillsUsed == 0 ? 0 : calculateGradedScore(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
 
                 let moodPercentageModifier = 0.02;
 
