@@ -1,8 +1,8 @@
 ﻿import TextInteraction, {TextCommandBuilder} from "../../types/TextInteraction";
-import {Message} from "discord.js";
+import {Message, TextChannel} from "discord.js";
 import DiscordClient from "../../DiscordClient";
 import {RacerMood} from "../../services/RaceService/types/Racer";
-import {numberSuffix, randomInt, rollXTimes, roundToQuarter} from "../../utils";
+import {calculateGradedScore, numberSuffix, randomInt, rollXTimes, roundToQuarter} from "../../utils";
 
 const nonGradedRacerListRegex = /(.+)/g;
 const gradedRacerListRegex = /(.+) ?- ?(\d+)/g
@@ -114,7 +114,7 @@ export default class ResultsCommand extends TextInteraction {
                 }
 
                 let skillsUsed = parseInt(match[2].trim());
-                let skillBonus = skillsUsed > 0 ? rollXTimes(skillsUsed, 1, 20) / skillsUsed : 0;
+                let skillBonus = calculateGradedScore(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
 
                 let moodPercentageModifier = 0.02;
 
@@ -188,10 +188,36 @@ export default class ResultsCommand extends TextInteraction {
                 }
 
                 //response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **score:** ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.min(50, Math.abs(results[index].score - results[index - 1].score)) / 10}L **margin:** ${distanceMarker}` : ""}`);
-                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **score:** ${results[index].score})`);
+                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **skill modifier:** ${Math.floor(results[index].skillBonus * 100000) / 100000} (used ${results[index].skillsUsed}), **score:** ${Math.floor(results[index].score * 100000) / 100000})`);
             }
 
-            await message.reply(response.join("\n"));
+            if (response.join("\n").length > 2000) {
+                let chunks: string[][] = [];
+                let current: string[] = [];
+
+                let chunkSizeMax = 10;
+                response.forEach(entry => {
+                    if (current.length == chunkSizeMax) {
+                        console.log("chunk done!");
+                        chunks.push(current);
+                        current = [];
+                    }
+
+                    current.push(entry);
+                });
+
+                chunks.push(current);
+
+                let first = true;
+                for (let msgChunk of chunks) {
+                    if (first) {
+                        await message.reply(msgChunk.join("\n"));
+                        first = false;
+                    } else
+                        await (message.channel as TextChannel).send(msgChunk.join("\n"));
+                }
+            } else
+                await message.reply(response.join("\n"));
         } else {
             await message.reply(`Unknown mode: "${mode}". Valid modes are: "none", "graded"`);
         }

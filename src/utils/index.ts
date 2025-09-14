@@ -9,6 +9,22 @@ export function getRandomUma() {
     return randomCharacterNames[Math.floor(Math.random() * randomCharacterNames.length)];
 }
 
+export function calculateGradedScore(rolls: number[]) {
+    const t = 5; // Saturation Constant
+    const penalty = 5; // Underuse penalty
+    const N0 = 30; // overuse threshold
+    const alpha = 0.15; // Overuse penalty factor
+    const p = 1.5; // Overuse exponent
+
+    const R = rolls.reduce((a, b) => a + b, 0) / rolls.length;
+
+    const base = R * (1 - Math.exp(-rolls.length / t));
+    const lowPenalty = penalty / (rolls.length + 1);
+    const overusePenalty = alpha * Math.pow(Math.max(0, rolls.length - N0), p);
+
+    return Math.max(0, base - lowPenalty - overusePenalty);
+}
+
 export function aptitudeToText(aptitude: AptitudeLevel): string {
     switch (aptitude) {
         case AptitudeLevel.S:

@@ -63,7 +63,8 @@ export default class Race {
 
     getResults() {
         if (this.type == RaceType.NonGraded) {
-            // TODO: Non-graded results
+            // TODO: Non-graded results'
+
             return [];
         } else {
             let placements: Placement[] = [];
@@ -125,10 +126,10 @@ export default class Race {
     }
 }
 
-export type RaceFlag = "URARA_MEMORIAM" | "OPERA_DOTO_WEDDING_BOUQUET_THROW";
+export type RaceFlag = "URARA_MEMORIAM" | "WEDDING_BOUQUET_THROW";
 export const RaceFlagOptions: {name: string, value: RaceFlag}[] = [
     { name: "Haru Urara Memoriam", value: "URARA_MEMORIAM" },
-    { name: "Opera & Doto Wedding - Bouquet Throw", value: "OPERA_DOTO_WEDDING_BOUQUET_THROW" }
+    { name: "Weddings: Bouquet Throw (Configure in config!)", value: "WEDDING_BOUQUET_THROW" }
 ]
 
 export interface Placement {

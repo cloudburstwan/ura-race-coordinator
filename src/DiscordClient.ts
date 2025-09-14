@@ -255,7 +255,7 @@ interface Config {
         overseas_announce: Snowflake,
         daily_announce: Snowflake,
         events: {
-            opera_doto_wedding_guest_chat: Snowflake
+            wedding_guest_chat: Snowflake
         }
     }
 }
