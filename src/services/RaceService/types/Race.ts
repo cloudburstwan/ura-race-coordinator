@@ -36,7 +36,7 @@ export default class Race {
             this.distance = DistanceType.Sprint;
         else if (distance <= 1800)
             this.distance = DistanceType.Mile;
-        else if (distance <= 2200)
+        else if (distance <= 2400)
             this.distance = DistanceType.Medium;
         else
             this.distance = DistanceType.Long;
