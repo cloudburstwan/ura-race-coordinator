@@ -2,7 +2,7 @@
 
 import {
     AutocompleteInteraction, ChatInputCommandInteraction,
-    CommandInteraction,
+    CommandInteraction, MessageFlagsBitField,
     SlashCommandBuilder,
     SlashCommandOptionsOnlyBuilder,
     SlashCommandSubcommandsOnlyBuilder
@@ -42,10 +42,20 @@ export default class SlashCommandWithSubcommandsInteraction {
         let subcommand = this.commands.get(subcommandStr);
         if (subcommand)
             await subcommand.execute(interaction, client);
+        else
+            await interaction.reply({
+                content: "Unknown subcommand. Something went wrong. Go yell at Grass Wonder or something idk",
+                flags: MessageFlagsBitField.Flags.Ephemeral
+            });
     }
 
     public async autocomplete(interaction: AutocompleteInteraction, client: DiscordClient) {
-        await interaction.respond([]);
-        return;
+        let subcommandStr = interaction.options.getSubcommand();
+
+        let subcommand = this.commands.get(subcommandStr);
+        if (subcommand)
+            await subcommand.autocomplete(interaction, client);
+        else
+            await interaction.respond([]);
     }
 }

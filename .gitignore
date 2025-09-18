@@ -5,3 +5,4 @@ compose.yaml
 package-lock.json
 config.json
 emote_lang.json
+CharacterCommand

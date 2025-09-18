@@ -10,7 +10,7 @@ import {
 import DiscordClient from "../DiscordClient";
 
 export default class SlashCommandInteraction {
-    public info: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder | SlashCommandSubcommandsOnlyBuilder;
+    public info: SlashCommandOptionsOnlyBuilder;
 
     public async execute(interaction: ChatInputCommandInteraction, client: DiscordClient) {
         await interaction.reply("No configured response for this application command.");

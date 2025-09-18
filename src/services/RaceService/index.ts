@@ -32,7 +32,7 @@ export default class RaceService {
         this.loadRaceData()
     }
 
-    private async updateRaceMessage(race: Race, client: DiscordClient, newRace: boolean = false, useGate: boolean = false): Promise<Snowflake | void> {
+    private async updateRaceMessage(race: Race, client: DiscordClient, newRace: boolean = false, useGate: boolean = false): Promise<{ channel: Snowflake, message: Snowflake } | void> {
         let surfaceEmoji: string;
         switch (race.surface) {
             case SurfaceType.Dirt:
@@ -169,7 +169,10 @@ export default class RaceService {
                 flags: MessageFlagsBitField.Flags.IsComponentsV2
             });
 
-            return message.id;
+            return {
+                channel: message.channelId,
+                message: message.id
+            };
         } else {
             let message = await channel.messages.fetch(race.messageId);
 
@@ -182,12 +185,13 @@ export default class RaceService {
 
     public async createRace(race: Race, client: DiscordClient) {
         let result = await this.DataService.races.insertOne(race);
-        let msgId = await this.updateRaceMessage(race, client, true) as Snowflake;
+        let msg = await this.updateRaceMessage(race, client, true) as {channel: Snowflake, message: Snowflake};
 
-        race.messageId = msgId;
+        race.messageId = msg.message;
 
         this.races.push(race);
         await this.DataService.races.updateOne({ _id: result.insertedId }, { $set: race });
+        return msg.channel;
     }
 
     public async addRacer(raceId: string, member: GuildMember, characterName: string, force: boolean = false) {
