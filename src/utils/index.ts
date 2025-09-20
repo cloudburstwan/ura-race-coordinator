@@ -115,3 +115,15 @@ export function rollXTimes(times: number, min: number, max: number) {
     }
     return result;
 }
+
+export function emojifyRaceName(raceName: string, client: DiscordClient): string {
+    return raceName
+        .replaceAll(/[\[(]G1[\])]/gi, client.getEmojiString("racegrade_g1"))
+        .replaceAll(/[\[(]G2[\])]/gi, client.getEmojiString("racegrade_g2"))
+        .replaceAll(/[\[(]G3[\])]/gi, client.getEmojiString("racegrade_g3"))
+        .replaceAll(/[\[(]OPEN[\])]/gi, client.getEmojiString("racegrade_open"))
+        .replaceAll(/[\[(]PRE-OPEN[\])]/gi, client.getEmojiString("racegrade_preopen"))
+        .replaceAll(/[\[(]MAIDEN[\])]/gi, client.getEmojiString("racegrade_maiden"))
+        .replaceAll(/[\[(]DEBUT[\])]/gi, client.getEmojiString("racegrade_debut"))
+        .replaceAll(/[\[(]EX[\])]/gi, client.getEmojiString("racegrade_exhibition"));
+}
