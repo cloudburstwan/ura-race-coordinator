@@ -5,7 +5,7 @@ import {RacerMood} from "../../services/RaceService/types/Racer";
 import {calculateGradedScore, numberSuffix, randomInt, rollXTimes, roundToQuarter} from "../../utils";
 
 const nonGradedRacerListRegex = /(.+)/g;
-const gradedRacerListRegex = /(.+) ?- ?(\d+)/g
+const gradedRacerListRegex = /(.+) ?\[(\d)] ?- ?(\d+)/g
 
 export default class ResultsCommand extends TextInteraction {
     public info = new TextCommandBuilder()
@@ -94,13 +94,7 @@ export default class ResultsCommand extends TextInteraction {
                 gradedRacerListRegex.lastIndex = 0;
                 let match = gradedRacerListRegex.exec(line);
 
-                let moodRandom = randomInt(1, 20);
-                let mood: RacerMood = RacerMood.Normal;
-                if (moodRandom <= 4) mood = RacerMood.Awful; else
-                if (moodRandom <= 8) mood = RacerMood.Bad; else
-                if (moodRandom <= 12) mood = RacerMood.Normal; else
-                if (moodRandom <= 16) mood = RacerMood.Good; else
-                if (moodRandom <= 20) mood = RacerMood.Great;
+                let mood: RacerMood = parseInt(match[2].trim());
 
                 let stages: number[] = [];
 
@@ -113,7 +107,7 @@ export default class ResultsCommand extends TextInteraction {
                     baseScore += value;
                 }
 
-                let skillsUsed = parseInt(match[2].trim());
+                let skillsUsed = parseInt(match[3].trim());
                 let skillBonus = skillsUsed == 0 ? 0 : calculateGradedScore(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
 
                 let moodPercentageModifier = 0.02;

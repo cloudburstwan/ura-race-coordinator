@@ -261,7 +261,7 @@ export default class RaceService {
         race.racers.forEach((racer, index) => {
             racer.gate = index+1;
 
-            if (race.flag == "URARA_MEMORIAM") {
+            if (["URARA_MEMORIAM", "WEDDING_BOUQUET_THROW"].includes(race.flag)) {
                 racer.assignMood(RacerMood.Great);
             } else {
                 racer.assignMood();
