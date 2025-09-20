@@ -5,7 +5,7 @@ import {RacerMood} from "../../services/RaceService/types/Racer";
 import {calculateGradedScore, numberSuffix, randomInt, rollXTimes, roundToQuarter} from "../../utils";
 
 const nonGradedRacerListRegex = /(.+)/g;
-const gradedRacerListRegex = /(.+) ?\[(\d)] ?- ?(\d+)/g
+const gradedRacerListRegex = /(.+) ?\[(-?\d)] ?- ?(\d+)/g
 
 export default class ResultsCommand extends TextInteraction {
     public info = new TextCommandBuilder()
