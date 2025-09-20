@@ -1,6 +1,6 @@
 ﻿// TODO: Service responsible for generating images in real-time (e.g. for scoreboards)
 import {createCanvas, Image, loadImage} from "canvas";
-import {DistanceType, MarginType, RaceType, SurfaceType, TrackConditionType} from "../RaceService/types/Race";
+import {DistanceType, MarginType, RaceType, TrackConditionType} from "../RaceService/types/Race";
 import {addLeadingZero, randomInt} from "../../utils";
 
 const baseUrl = "https://s3.cloudburst.lgbt/race-assets";
@@ -26,6 +26,12 @@ const imagePositions = {
         1: [258, 226],
         2: [258, 306],
         3: [258, 386]
+    },
+    scores: {
+        0: [328, 168],
+        1: [328, 248],
+        2: [328, 328],
+        3: [328, 408]
     },
     timer: {
         minute: [128, 520],
@@ -84,6 +90,8 @@ export default class ImageService {
 
         // Racer Gate Number
         for (let i = 0; i < Math.min(5, placements.length); i++) {
+            console.log(placements[i])
+            if (placements[i] == undefined) continue;
             let image = await loadImage(`${baseUrl}/components/racer_gate_number/${placements[i]}.png`);
 
             ctx.drawImage(image, imagePositions.gateNumbers[i][0], imagePositions.gateNumbers[i][1]);
@@ -92,8 +100,54 @@ export default class ImageService {
         // Chevrons & Margins
         let chevronImage = await loadImage(`${baseUrl}/components/chevron.png`);
         for (let i = 0; i < Math.min(4, margins.length); i++) {
-            if (margins[i] == undefined) return; // Margin is "undecided" (for hype reasons)
+            console.log(margins[i])
+            if (margins[i].type == MarginType.None) continue; // Margin is "undecided" (for hype reasons)
             ctx.drawImage(chevronImage, imagePositions.chevrons[i][0], imagePositions.chevrons[i][1]);
+        }
+
+        // Scores
+        for (let i = 0; i < Math.min(4, margins.length); i++) {
+            let imgName: string;
+            switch (margins[i].type) {
+                case MarginType.Distance:
+                    imgName = "distance";
+                    break;
+                case MarginType.Number:
+                    let fraction: string;
+                    switch (margins[i].value % 1) {
+                        case 0.25:
+                            fraction = "1-4";
+                            break;
+                        case 0.5:
+                            fraction = "1-2";
+                            break;
+                        case 0.75:
+                            fraction = "3-4";
+                            break;
+                        default:
+                            fraction = null;
+                    }
+                    imgName = `${Math.floor(margins[i].value)}${fraction != null ? `_${fraction}` : ""}`;
+                    break;
+                case MarginType.Neck:
+                    imgName = "neck";
+                    break;
+                case MarginType.Head:
+                    imgName = "head";
+                    break;
+                case MarginType.Nose:
+                    imgName = "nose";
+                    break;
+                case MarginType.DeadHeat:
+                    imgName = "dead_heat";
+                    break;
+                default:
+                    imgName = null;
+            }
+            console.log(imgName);
+            if (imgName == null) continue;
+            let img = await loadImage(`${baseUrl}/components/scores/${imgName}.png`);
+            ctx.drawImage(img, imagePositions.scores[i][0], imagePositions.scores[i][1]);
         }
 
         // Timer
