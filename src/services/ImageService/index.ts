@@ -1,7 +1,7 @@
 ﻿// TODO: Service responsible for generating images in real-time (e.g. for scoreboards)
 import {createCanvas, Image, loadImage} from "canvas";
 import {DistanceType, MarginType, RaceType, TrackConditionType} from "../RaceService/types/Race";
-import {addLeadingZero, randomInt} from "../../utils";
+import {addLeadingZero, randomInt, roundToQuarter} from "../../utils";
 
 const baseUrl = "https://s3.cloudburst.lgbt/race-assets";
 const imagePositions = {
@@ -54,8 +54,10 @@ export default class ImageService {
         const canvas = createCanvas(base.width, base.height);
         const ctx = canvas.getContext("2d");
 
+        console.log("base");
         ctx.drawImage(base, 0, 0, base.width, base.height);
 
+        console.log("race number");
         let raceNumber = 0;
 
         if (type == RaceType.NonGraded) raceNumber = randomInt(1, 7);
@@ -65,6 +67,7 @@ export default class ImageService {
 
         ctx.drawImage(raceNumberImg, imagePositions.raceNumber[0], imagePositions.raceNumber[1]);
 
+        console.log("status");
         let statusImage: Image;
         switch (status) {
             case ScoreStatus.Final:
@@ -81,6 +84,7 @@ export default class ImageService {
             ctx.drawImage(statusImage, imagePositions.state[0], imagePositions.state[1]);
         }
 
+        console.log("position");
         // Position Number
         for (let i = 0; i < Math.min(5, positionNumbers.length); i++) {
             let image = await loadImage(`${baseUrl}/components/position/${positionNumbers[i]}.png`);
@@ -88,6 +92,7 @@ export default class ImageService {
             ctx.drawImage(image, imagePositions.position[i][0], imagePositions.position[i][1]);
         }
 
+        console.log("gate");
         // Racer Gate Number
         for (let i = 0; i < Math.min(5, placements.length); i++) {
             console.log(placements[i])
@@ -97,24 +102,29 @@ export default class ImageService {
             ctx.drawImage(image, imagePositions.gateNumbers[i][0], imagePositions.gateNumbers[i][1]);
         }
 
+        console.log("chevron");
         // Chevrons & Margins
         let chevronImage = await loadImage(`${baseUrl}/components/chevron.png`);
         for (let i = 0; i < Math.min(4, margins.length); i++) {
             console.log(margins[i])
             if (margins[i].type == MarginType.None) continue; // Margin is "undecided" (for hype reasons)
             ctx.drawImage(chevronImage, imagePositions.chevrons[i][0], imagePositions.chevrons[i][1]);
+
+
         }
 
+        console.log("margin");
         // Scores
         for (let i = 0; i < Math.min(4, margins.length); i++) {
             let imgName: string;
+            let value = roundToQuarter(margins[i].value)
             switch (margins[i].type) {
                 case MarginType.Distance:
                     imgName = "distance";
                     break;
                 case MarginType.Number:
                     let fraction: string;
-                    switch (margins[i].value % 1) {
+                    switch (value % 1) {
                         case 0.25:
                             fraction = "1-4";
                             break;
@@ -127,7 +137,12 @@ export default class ImageService {
                         default:
                             fraction = null;
                     }
-                    imgName = `${Math.floor(margins[i].value)}${fraction != null ? `_${fraction}` : ""}`;
+                    let res = [];
+                    if (value >= 1)
+                        res.push(Math.floor(value));
+                    if (fraction != null)
+                        res.push(fraction);
+                    imgName = res.join("_");
                     break;
                 case MarginType.Neck:
                     imgName = "neck";
@@ -150,6 +165,7 @@ export default class ImageService {
             ctx.drawImage(img, imagePositions.scores[i][0], imagePositions.scores[i][1]);
         }
 
+        console.log("timer");
         // Timer
         let randomTime = 0;
 
@@ -182,6 +198,7 @@ export default class ImageService {
             ctx.drawImage(img, imagePositions.timer.seconds[i][0], imagePositions.timer.seconds[i][1]);
         }
 
+        console.log("turf condition");
         // Surface
         let turfConditionImage: Image;
         switch (condition.turf) {
@@ -201,6 +218,7 @@ export default class ImageService {
 
         ctx.drawImage(turfConditionImage, imagePositions.trackCondition.turf[0], imagePositions.trackCondition.turf[1]);
 
+        console.log("dirt condition");
         let dirtConditionImage: Image;
         switch (condition.dirt) {
             case TrackConditionType.Firm:

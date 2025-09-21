@@ -10,7 +10,7 @@ import DiscordClient from "../../../../DiscordClient";
 export default class RaceDisqualifySubcommand extends SubcommandInteraction {
     public info = new SlashCommandSubcommandBuilder()
         .setName("disqualify")
-        .setDescription("Disqualify a racer from a race. Announces this to the public")
+        .setDescription("Disqualify a racer from a race (OOC). Announces this to the public")
         .addStringOption(option => option
             .setName("race")
             .setDescription("The race that you want to set skills for")
@@ -18,8 +18,8 @@ export default class RaceDisqualifySubcommand extends SubcommandInteraction {
             .setAutocomplete(true)
         )
         .addStringOption(option => option
-            .setName("character")
-            .setDescription("The character you want to set the skills used count for")
+            .setName("racer")
+            .setDescription("The racer you wish to disqualify")
             .setRequired(true)
             .setAutocomplete(true)
         )
@@ -29,6 +29,9 @@ export default class RaceDisqualifySubcommand extends SubcommandInteraction {
             .setRequired(true)
             .addChoices([
                 // TODO: Reasons
+                { name: "Did not show", value: "no-show" },
+                { name: "Broke race rules (use message option)", value: "race-rules" },
+                { name: "Other (use message option)", value: "other" }
             ])
         )
         .addStringOption(option => option

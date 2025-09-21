@@ -1,11 +1,13 @@
 ﻿import TextInteraction, {TextCommandBuilder} from "../../types/TextInteraction";
-import {Message, TextChannel} from "discord.js";
+import {AttachmentBuilder, Message, TextChannel} from "discord.js";
 import DiscordClient from "../../DiscordClient";
 import {RacerMood} from "../../services/RaceService/types/Racer";
-import {calculateGradedScore, numberSuffix, randomInt, rollXTimes, roundToQuarter} from "../../utils";
+import {calculateGradedScore, numberSuffix, randomInt, roundToQuarter} from "../../utils";
+import {DistanceType, MarginType, RaceType, TrackConditionType} from "../../services/RaceService/types/Race";
+import ImageService, {ScoreStatus} from "../../services/ImageService";
 
-const nonGradedRacerListRegex = /(.+)/g;
-const gradedRacerListRegex = /(.+) ?\[(-?\d)] ?- ?(\d+)/g
+const nonGradedRacerListRegex = /\[#(\d+)] ?(.+)/g;
+const gradedRacerListRegex = /\[#(\d+)] ?(.+) ?\[(-?\d)] ?- ?(\d+)/g
 
 export default class ResultsCommand extends TextInteraction {
     public info = new TextCommandBuilder()
@@ -37,7 +39,8 @@ export default class ResultsCommand extends TextInteraction {
                 let match = nonGradedRacerListRegex.exec(line);
 
                 return {
-                    name: match[1].trim(),
+                    gate: parseInt(match[1].trim()),
+                    name: match[2].trim(),
                     numbers: [Math.floor(Math.random() * 100) + 1, Math.floor(Math.random() * 100) + 1]
                 };
             }).sort(() => Math.floor(Math.random() * 2) == 1 ? -1 : 1);
@@ -48,6 +51,10 @@ export default class ResultsCommand extends TextInteraction {
                 }, racer);
             }).sort((a, b) => a.difference < b.difference ? -1 : 1);
 
+            let positions = [];
+            let placements = [];
+            let margins = [];
+
             let response = [];
             let offset = -1;
             for (let place in results) {
@@ -57,36 +64,52 @@ export default class ResultsCommand extends TextInteraction {
                     // Dead heat
                     offset++;
                     distanceMarker = "DEAD HEAT"
+                    margins.push({ type: MarginType.DeadHeat, value: 0 });
                 } else if (index >= 1) {
                     switch (Math.abs(results[index].difference - results[index - 1].difference)) {
                         case 0:
-                            distanceMarker = "PHOTO";
-                            break;
                         case 1:
                             distanceMarker = "NOSE";
+                            margins.push({ type: MarginType.Nose, value: 0.1 });
                             break;
                         case 2:
                             distanceMarker = "HEAD";
+                            margins.push({ type: MarginType.Head, value: 0.2 });
                             break;
                         case 3:
                         case 4:
                             distanceMarker = "NECK"
+                            margins.push({ type: MarginType.Neck, value: 0.3 });
                             break;
                         default:
-                            distanceMarker = `${roundToQuarter((results[index].difference - results[index - 1].difference) / 10)}L`;
+                            let value = roundToQuarter((results[index].difference - results[index - 1].difference) / 10)
+                            distanceMarker = `${value}L`;
+                            if (value < 10)
+                                margins.push({ type: MarginType.Number, value });
+                            else
+                                margins.push({ type: MarginType.Distance, value });
                     }
                 }
+
+                positions.push(index - offset);
+                placements.push(results[index].gate);
+
                 response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} (**numbers:** [${results[index].numbers.join(", ")}], **diff:** ${results[index].difference}) ${index >= 1 ? `**margin diff:** ${Math.min(50, results[index].difference - results[index - 1].difference) / 10}L **margin:** ${distanceMarker}` : ""}`);
             }
 
-            await message.reply(response.join("\n"));
+            let image = await ImageService.drawScoreboard(RaceType.GradedDomestic, ScoreStatus.Final, DistanceType.Medium, positions, placements, margins, { turf: TrackConditionType.Good, dirt: TrackConditionType.Good });
+
+            await message.reply({
+                content: response.join("\n"),
+                files: [ new AttachmentBuilder(image).setName("scoreboard.png") ]
+            });
         } else if (["graded"].includes(mode)) {
             // TODO: Graded mode
             if (!referencedMessage.content.split("\n").every(line => {
                 gradedRacerListRegex.lastIndex = 0;
                 return gradedRacerListRegex.test(line)
             })) {
-                await message.reply("The message you replied to doesn't look like a list of racers and the amount of skills they've used. Please try again!");
+                await message.reply("The message you replied to doesn't look like a list of racers, their gate numbers, their mood, and the amount of skills they've used. Please try again!");
                 return;
             }
 
@@ -94,7 +117,7 @@ export default class ResultsCommand extends TextInteraction {
                 gradedRacerListRegex.lastIndex = 0;
                 let match = gradedRacerListRegex.exec(line);
 
-                let mood: RacerMood = parseInt(match[2].trim());
+                let mood: RacerMood = parseInt(match[3].trim());
 
                 let stages: number[] = [];
 
@@ -107,7 +130,7 @@ export default class ResultsCommand extends TextInteraction {
                     baseScore += value;
                 }
 
-                let skillsUsed = parseInt(match[3].trim());
+                let skillsUsed = parseInt(match[4].trim());
                 let skillBonus = skillsUsed == 0 ? 0 : calculateGradedScore(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
 
                 let moodPercentageModifier = 0.02;
@@ -118,7 +141,8 @@ export default class ResultsCommand extends TextInteraction {
                 let score = (baseScore + skillBonus) + scoreModifier;
 
                 return {
-                    name: match[1].trim(),
+                    gate: parseInt(match[1]),
+                    name: match[2].trim(),
                     baseScore,
                     mood,
                     moodPercentage,
@@ -134,31 +158,40 @@ export default class ResultsCommand extends TextInteraction {
 
             let response = [];
             let offset = -1;
+
+            let placements = [];
+            let racerGateNumbers = [];
+            let margins = [];
+
             for (let place in results) {
                 let index = parseInt(place);
                 let distanceMarker = "";
                 if (index >= 1 && results[index - 1].score == results[index].score) {
-                    // Dead heat
-                    offset++;
-                    distanceMarker = "DEAD HEAT"
-                } else if (index >= 1) {
-                    switch (Math.abs(results[index].score - results[index - 1].score)) {
-                        case 0:
-                            distanceMarker = "PHOTO";
-                            break;
-                        case 1:
-                            distanceMarker = "NOSE";
-                            break;
-                        case 2:
-                            distanceMarker = "HEAD";
-                            break;
-                        case 3:
-                        case 4:
-                            distanceMarker = "NECK"
-                            break;
-                        default:
-                            distanceMarker = `${roundToQuarter(Math.abs(results[index].score - results[index - 1].score) / 10)}L`;
+                    // Potential dead heat.
+                    let highestScoreForPrevious = 0;
+                    results[index - 1].stages.forEach(stage => stage > highestScoreForPrevious ? highestScoreForPrevious = stage : null);
+
+                    let highestScoreForCurrent = 0;
+                    results[index].stages.forEach(stage => stage > highestScoreForCurrent ? highestScoreForCurrent = stage : null);
+
+                    if (highestScoreForCurrent == highestScoreForPrevious) {
+                        // Dead heat.
+                        offset++;
+                        distanceMarker = "DEAD HEAT";
+                    } else {
+                        distanceMarker = "NOSE";
                     }
+                } else if (index >= 1) {
+                    let score = Math.abs(results[index].score - results[index - 1].score);
+
+                    if (score <= 0.1)
+                        distanceMarker = "NOSE";
+                    else if (score <= 0.2)
+                        distanceMarker = "HEAD";
+                    else if (score <= 0.4)
+                        distanceMarker = "NECK";
+                    else
+                        distanceMarker = `${roundToQuarter(Math.abs(results[index].score - results[index - 1].score))}L`;
                 }
                 let moodName = "";
                 switch (results[index].mood) {
@@ -181,9 +214,38 @@ export default class ResultsCommand extends TextInteraction {
                         moodName = "UNKNOWN";
                 }
 
+                // Images
+                placements.push(index - offset);
+                racerGateNumbers.push(results[index].gate);
+
+                if (distanceMarker != "") {
+                    switch (distanceMarker) {
+                        case "DEAD HEAT":
+                            margins.push({ type: MarginType.DeadHeat, value: 0 });
+                            break;
+                        case "NOSE":
+                            margins.push({ type: MarginType.Nose, value: 0.1 });
+                            break;
+                        case "HEAD":
+                            margins.push({ type: MarginType.Head, value: 0.2 });
+                            break;
+                        case "NECK":
+                            margins.push({ type: MarginType.Neck, value: 0.3 });
+                            break;
+                        default:
+                            margins.push({ type: MarginType.Number, value: Math.abs(results[index].score - results[index - 1].score) });
+                    }
+                }
+
+                console.log(placements);
+                console.log(racerGateNumbers);
+                console.log(margins);
+
                 //response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **score:** ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.min(50, Math.abs(results[index].score - results[index - 1].score)) / 10}L **margin:** ${distanceMarker}` : ""}`);
-                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **skill modifier:** ${Math.floor(results[index].skillBonus * 100000) / 100000} (used ${results[index].skillsUsed}), **score:** ${Math.floor(results[index].score * 100000) / 100000})`);
+                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **skill modifier:** ${Math.floor(results[index].skillBonus * 100000) / 100000} (used ${results[index].skillsUsed}), **score:** ${Math.floor(results[index].score * 100000) / 100000}) ${index >= 1 ? `**margin diff:** ${Math.floor((Math.min(100, Math.abs(results[index].score - results[index - 1].score))) * 100000) / 100000}L **margin:** ${distanceMarker}` : ""}`);
             }
+
+            let image = await ImageService.drawScoreboard(RaceType.GradedDomestic, ScoreStatus.Final, DistanceType.Medium, placements, racerGateNumbers, margins, { turf: TrackConditionType.Good, dirt: TrackConditionType.Good });
 
             if (response.join("\n").length > 2000) {
                 let chunks: string[][] = [];
@@ -210,8 +272,15 @@ export default class ResultsCommand extends TextInteraction {
                     } else
                         await (message.channel as TextChannel).send(msgChunk.join("\n"));
                 }
+                await (message.channel as TextChannel).send({
+                    content: "scoreboard image",
+                    files: [ new AttachmentBuilder(image).setName("scoreboard.png") ]
+                });
             } else
-                await message.reply(response.join("\n"));
+                await message.reply({
+                    content: response.join("\n"),
+                    files: [ new AttachmentBuilder(image).setName("scoreboard.png") ]
+                });
         } else {
             await message.reply(`Unknown mode: "${mode}". Valid modes are: "none", "graded"`);
         }

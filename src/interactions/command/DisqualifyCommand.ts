@@ -1,14 +1,19 @@
 ﻿import SlashCommandInteraction from "../../types/SlashCommandInteraction";
 import {
     ActionRowBuilder,
-    ChatInputCommandInteraction, ComponentBuilder,
-    ContainerBuilder, MessageActionRowComponentBuilder, MessageFlagsBitField, SelectMenuOptionBuilder,
+    ChatInputCommandInteraction,
+    ContainerBuilder,
+    MessageActionRowComponentBuilder,
+    MessageFlagsBitField,
+    SelectMenuOptionBuilder,
     SeparatorBuilder,
     SeparatorSpacingSize,
-    SlashCommandBuilder, StringSelectMenuBuilder,
+    SlashCommandBuilder,
+    StringSelectMenuBuilder,
     TextDisplayBuilder
 } from "discord.js";
 import DiscordClient from "../../DiscordClient";
+import Disqualification, {DisqualificationType} from "../../services/RaceService/types/Disqualification";
 
 export default class DisqualifyCommand extends SlashCommandInteraction {
     public info = new SlashCommandBuilder()
@@ -44,6 +49,9 @@ export default class DisqualifyCommand extends SlashCommandInteraction {
 
         switch (reason) {
             case "NON_GRADED":
+                await client.services.data.disqualifications.insertOne(
+                    new Disqualification(user.id, 7 * 24 * 60 * 60 * 1000, `Did not attend non-graded race "${race}"`, DisqualificationType.Graded, 0)
+                )
                 component
                     .addTextDisplayComponents(
                         new TextDisplayBuilder().setContent("# You have been disqualified from this weekends graded races."),
@@ -59,6 +67,9 @@ export default class DisqualifyCommand extends SlashCommandInteraction {
                     )
                 break;
             case "GRADED":
+                await client.services.data.disqualifications.insertOne(
+                    new Disqualification(user.id, 2 * 7 * 24 * 60 * 60 * 1000, `Did not attend graded race "${race}"`, DisqualificationType.Graded, 0)
+                )
                 component
                     .addTextDisplayComponents(
                         new TextDisplayBuilder().setContent("# You have been made ineligible for all graded races for 2 weeks."),
@@ -96,20 +107,7 @@ export default class DisqualifyCommand extends SlashCommandInteraction {
             });
 
             await interaction.reply({
-                content: "Successfully sent disqualification message to the user.",
-                components: [
-                    new ActionRowBuilder<MessageActionRowComponentBuilder>()
-                        .addComponents(
-                            new StringSelectMenuBuilder()
-                                .setCustomId("1c230ec4d87548b1e1209832c80a7ff6")
-                                .addOptions(
-                                    new SelectMenuOptionBuilder()
-                                        .setLabel("Nosy Crocodile")
-                                        .setValue("1269e51c69ed4e49f476ac6f719e5656"),
-                                ),
-                        ),
-                ],
-                flags: MessageFlagsBitField.Flags.Ephemeral
+                content: "Successfully sent disqualification message to the user."
             });
         } catch (e) {
             console.error(`Failed to inform a user that they were disqualified: ${e.message}`);

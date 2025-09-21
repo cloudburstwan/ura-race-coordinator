@@ -43,6 +43,12 @@ export default class JoinRaceModal extends ModalInteraction {
                             flags: MessageFlagsBitField.Flags.Ephemeral
                         });
                         break;
+                    case "USER_DISQUALIFIED":
+                        await interaction.reply({
+                            content: "You are currently disqualified, and as a result, cannot join this race.",
+                            flags: MessageFlagsBitField.Flags.Ephemeral
+                        });
+                        break;
                     default:
                         console.error(`Unknown type of error while attempting to add racer (${interaction.user.id}, ${name}) to race id ${data[0]}: ${e.message}`);
                         await interaction.reply({

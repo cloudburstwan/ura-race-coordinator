@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@discordjs/discord.js": "github:discordjs/discord.js#v14",
     "@types/node": "^24.3.0",
     "canvas": "^3.2.0",
     "discord.js": "^14.22.1",

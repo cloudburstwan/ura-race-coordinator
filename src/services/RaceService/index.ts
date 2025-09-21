@@ -1,24 +1,21 @@
 ﻿// TODO: Build race service to handle processing of races.
 
-import Race, {DistanceType, RaceStatus, RaceType, SurfaceType, TrackConditionType, WeatherType} from "./types/Race";
+import Race, {RaceStatus, RaceType} from "./types/Race";
 import DataService from "../DataService";
 import DiscordClient from "../../DiscordClient";
 import {
-    ActionRowBuilder,
-    ButtonBuilder,
     ButtonStyle,
-    ContainerBuilder,
     GuildMember,
-    MessageActionRowComponentBuilder,
-    MessageFlagsBitField, PublicThreadChannel,
-    SeparatorBuilder,
+    MessageFlagsBitField,
+    PublicThreadChannel,
     SeparatorSpacingSize,
     Snowflake,
-    TextChannel,
-    TextDisplayBuilder
+    TextChannel
 } from "discord.js";
 import {RacerMood} from "./types/Racer";
 import createRaceSignupComponent from "../../components/RaceSignupComponent";
+import Disqualification, {DisqualificationType} from "./types/Disqualification";
+import {Filter} from "mongodb";
 
 export default class RaceService {
     public races: Race[] = [];
@@ -96,6 +93,15 @@ export default class RaceService {
 
         if (linkRegex.test(characterName))
             throw new RaceError("BAD_CHARACTER_NAME", "Sorry, your character cannot be a website.\n-# Please do not try to set your character name to a link.");
+
+        let disqualificationSearchQuery: Filter<Disqualification> = { memberId: member.id, endsAt: { $gte: new Date() } };
+
+        if (race.type != RaceType.NonGraded)
+            disqualificationSearchQuery.type = DisqualificationType.Graded;
+
+        if ((await this.Client.services.data.disqualifications.find(disqualificationSearchQuery).toArray()).length > 0) {
+            throw new RaceError("USER_DISQUALIFIED", "User disqualified from this race and cannot join")
+        }
 
         try {
             race.addRacer(member, characterName);
@@ -208,4 +214,4 @@ export class RaceError extends Error {
 }
 
 type RaceErrorCode = "RACE_NOT_FOUND" | "RACE_SIGNUP_CLOSED_OR_FULL" | "RACE_IN_PROGRESS_OR_OVER" | "CHARACTER_ALREADY_JOINED" | "MEMBER_NOT_JOINED" |
-                     "BAD_CHARACTER_NAME" | "RACE_ALREADY_STARTED" | "RACE_NOT_YET_STARTED_OR_OVER"
+                     "BAD_CHARACTER_NAME" | "RACE_ALREADY_STARTED" | "RACE_NOT_YET_STARTED_OR_OVER" | "USER_DISQUALIFIED"
