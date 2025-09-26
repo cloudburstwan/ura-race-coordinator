@@ -79,9 +79,9 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
         .map(racer => Object.assign({ favouritePositionDecider: randomInt(0, 200) }, racer))
         .sort((racer1, racer2) => racer1.favouritePositionDecider < racer2.favouritePositionDecider ? -1 : 1);
 
-    for (let index in racersWithFavourites) {
+    for (let index in race.racers) {
         let moodEmojiCombo: string;
-        switch (racersWithFavourites[index].mood) {
+        switch (race.racers[index].mood) {
             case RacerMood.Awful:
                 moodEmojiCombo = client.getEmojiString("mood_awful_large");
                 break;
@@ -99,8 +99,10 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
                 break;
         }
 
+        let favouritePosition = racersWithFavourites.findIndex(racer => racer.memberId == race.racers[index].memberId && racer.characterName == race.racers[index].characterName)
+
         component.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`[#${parseInt(index)+1}] **${racersWithFavourites[index].characterName}** ${moodEmojiCombo} [${parseInt(index) < 2 ? "**" : ""}${parseInt(index)+1}${numberSuffix(parseInt(index)+1)} favorite${parseInt(index) < 2 ? "**" : ""}]`),
+            new TextDisplayBuilder().setContent(`[#${race.racers[index].gate+1}] **${race.racers[index].characterName}** ${moodEmojiCombo} [${favouritePosition < 3 ? "**" : ""}${favouritePosition+1}${numberSuffix(favouritePosition+1)} favorite${favouritePosition < 3 ? "**" : ""}]`),
         );
 
         mentions.push(`<@${race.racers[index].memberId}>`);
