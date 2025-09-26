@@ -51,6 +51,8 @@ export default class Race {
             throw new RangeError(`This race is a memoriam for Haru Urara. Only Haru Urara is allowed to race. Try racing as Haru Urara!\n-# Even if you think you can't do it, just keep on pushing ahead. She would have wanted you to try your best no matter what.`);
 
         let racer = new Racer(member.id, characterName);
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status))
+            racer.gate = Math.max(...this.racers.map(racer => racer.gate))+1;
 
         this.racers.push(racer);
     }
