@@ -102,7 +102,7 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
         let favouritePosition = racersWithFavourites.findIndex(racer => racer.memberId == race.racers[index].memberId && racer.characterName == race.racers[index].characterName)
 
         component.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`[#${race.racers[index].gate+1}] **${race.racers[index].characterName}** ${moodEmojiCombo} [${favouritePosition < 3 ? "**" : ""}${favouritePosition+1}${numberSuffix(favouritePosition+1)} favorite${favouritePosition < 3 ? "**" : ""}]`),
+            new TextDisplayBuilder().setContent(`[#${race.racers[index].gate}] **${race.racers[index].characterName}** ${moodEmojiCombo} [${favouritePosition < 3 ? "**" : ""}${favouritePosition+1}${numberSuffix(favouritePosition+1)} favorite${favouritePosition < 3 ? "**" : ""}]`),
         );
 
         mentions.push(`<@${race.racers[index].memberId}>`);
