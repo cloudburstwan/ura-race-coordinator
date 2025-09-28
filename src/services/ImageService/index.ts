@@ -48,8 +48,8 @@ const imagePositions = {
 }
 
 export default class ImageService {
-    static async drawScoreboard(type: RaceType, status: ScoreStatus, distance: DistanceType, positionNumbers: number[], placements: number[], margins: { type: MarginType, value: number }[], condition: SurfaceInfo, baseImageModifier?: string) {
-        let base = await loadImage(`${baseUrl}/base${baseImageModifier ? `_${baseImageModifier}` : ""}.png`);
+    static async drawScoreboard(type: RaceType, status: ScoreStatus, distance: DistanceType, positionNumbers: number[], placements: number[], margins: { type: MarginType, value: number }[], condition: SurfaceInfo, timeOverride?: number) {
+        let base = await loadImage(`${baseUrl}/base.png`);
 
         const canvas = createCanvas(base.width, base.height);
         const ctx = canvas.getContext("2d");
@@ -58,7 +58,7 @@ export default class ImageService {
         ctx.drawImage(base, 0, 0, base.width, base.height);
 
         console.log("race number");
-        let raceNumber = 0;
+        let raceNumber: number;
 
         if (type == RaceType.NonGraded) raceNumber = randomInt(1, 7);
         else raceNumber = randomInt(8, 12);
@@ -173,11 +173,11 @@ export default class ImageService {
         if (distance == DistanceType.Mile) randomTime = randomInt(900, 1050);
         if (distance == DistanceType.Medium) randomTime = randomInt(1050, 1200);
         if (distance == DistanceType.Long) randomTime = randomInt(1200, 1350);
-        let minutes = Math.floor(randomTime / 60 / 10);
-        let seconds = Math.floor(randomTime / 10) - (minutes * 60);
-        let millisecond = Math.floor(randomTime % 10);
+        let minutes = Math.floor((timeOverride ?? randomTime) / 60 / 10);
+        let seconds = Math.floor((timeOverride ?? randomTime) / 10) - (minutes * 60);
+        let millisecond = Math.floor((timeOverride ?? randomTime) % 10);
 
-        console.log(randomTime);
+        console.log(timeOverride ?? randomTime);
         console.log(minutes);
         console.log(seconds);
         console.log(millisecond);

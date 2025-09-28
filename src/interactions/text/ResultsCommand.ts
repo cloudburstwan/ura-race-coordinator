@@ -3,7 +3,13 @@ import {AttachmentBuilder, Message, TextChannel} from "discord.js";
 import DiscordClient from "../../DiscordClient";
 import {RacerMood} from "../../services/RaceService/types/Racer";
 import {calculateSkillBonus, numberSuffix, randomInt, roundToQuarter} from "../../utils";
-import {DistanceType, MarginType, RaceType, TrackConditionType} from "../../services/RaceService/types/Race";
+import {
+    DistanceType,
+    MarginType,
+    RaceType,
+    SurfaceType,
+    TrackConditionType
+} from "../../services/RaceService/types/Race";
 import ImageService, {ScoreStatus} from "../../services/ImageService";
 
 const nonGradedRacerListRegex = /\[#(\d+)] ?(.+)/g;
@@ -160,7 +166,7 @@ export default class ResultsCommand extends TextInteraction {
                 let assignedType = race.type == RaceType.GradedInternational ? "I" : "D";
 
                 let finalScore = score;
-                if (debuffFlag != assignedType) {
+                if (debuffFlag != assignedType && race.surface == SurfaceType.Turf) {
                     // Assign debuff
                     let debuffModifier = score * (debuffAdapted ? 0.025 : 0.05);
                     finalScore = score - debuffModifier;
@@ -272,7 +278,7 @@ export default class ResultsCommand extends TextInteraction {
                 response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **skill modifier:** ${Math.floor(results[index].skillBonus * 100000) / 100000} (used ${results[index].skillsUsed}), **score:** ${results[index].scoreBeforeDebuff} -> ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.floor((Math.min(100, Math.abs(results[index].score - results[index - 1].score))) * 100000) / 100000}L **margin:** ${distanceMarker}` : ""}`);
             }
 
-            let image = await ImageService.drawScoreboard(RaceType.GradedDomestic, ScoreStatus.Final, DistanceType.Medium, placements, racerGateNumbers, margins, { turf: TrackConditionType.Good, dirt: TrackConditionType.Good });
+            let image = await ImageService.drawScoreboard(race.type, ScoreStatus.Final, race.distance, placements, racerGateNumbers, margins, { turf: race.trackCondition, dirt: race.trackCondition });
 
             if (response.join("\n").length > 2000) {
                 let chunks: string[][] = [];
