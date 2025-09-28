@@ -7,7 +7,7 @@ import {DistanceType, MarginType, RaceType, TrackConditionType} from "../../serv
 import ImageService, {ScoreStatus} from "../../services/ImageService";
 
 const nonGradedRacerListRegex = /\[#(\d+)] ?(.+)/g;
-const gradedRacerListRegex = /\[#(\d+)] ?(.+) ?\[(-?\d)] ?- ?(\d+)/g
+const gradedRacerListRegex = /\[#(\d+)] ?(.+) ?\[(-?\d)] ? - ?([ID]A?) ?- ?(\d+)/g
 
 export default class ResultsCommand extends TextInteraction {
     public info = new TextCommandBuilder()
@@ -105,15 +105,29 @@ export default class ResultsCommand extends TextInteraction {
             });
         } else if (["graded"].includes(mode)) {
             // TODO: Graded mode
+            let raceId = "";
             if (!referencedMessage.content.split("\n").every(line => {
                 gradedRacerListRegex.lastIndex = 0;
-                return gradedRacerListRegex.test(line)
+
+                if (line.startsWith("-# Race ID: ")) {
+                    raceId = line.replace("-# Race ID: ", "");
+                    return true;
+                } else {
+                    return gradedRacerListRegex.test(line);
+                }
             })) {
-                await message.reply("The message you replied to doesn't look like a list of racers, their gate numbers, their mood, and the amount of skills they've used. Please try again!");
+                await message.reply("The message you replied to doesn't look like a list of racers, their gate numbers, their mood, the amount of skills they've used, and whether they're Domestic / JP (`D`) or International / Overseas (`I`) (if adapted, add `A` after this info). Please try again!");
                 return;
             }
 
-            let racers = referencedMessage.content.split("\n").map(line => {
+            let race = client.services.race.races.find(race => race._id.toString() == raceId);
+
+            if (race === undefined) {
+                await message.reply("Race ID seems to be invalid or not present. Aborting!");
+                return;
+            }
+
+            let racers = referencedMessage.content.replace(`\n-# Race ID: ${raceId}`, "").split("\n").map(line => {
                 gradedRacerListRegex.lastIndex = 0;
                 let match = gradedRacerListRegex.exec(line);
 
@@ -140,6 +154,18 @@ export default class ResultsCommand extends TextInteraction {
                 let scoreModifier = (baseScore + skillBonus) * moodPercentage;
                 let score = (baseScore + skillBonus) + scoreModifier;
 
+                let debuffFlag = match[5].trim().split("")[0];
+                let debuffAdapted = match[5].trim().split("")[1] == "A";
+
+                let assignedType = race.type == RaceType.GradedInternational ? "I" : "D";
+
+                let finalScore = score;
+                if (debuffFlag != assignedType) {
+                    // Assign debuff
+                    let debuffModifier = score * (debuffAdapted ? 0.025 : 0.05);
+                    finalScore = score - debuffModifier;
+                }
+
                 return {
                     gate: parseInt(match[1]),
                     name: match[2].trim(),
@@ -150,7 +176,8 @@ export default class ResultsCommand extends TextInteraction {
                     skillBonus,
                     stages,
                     scoreModifier,
-                    score: Math.round(score * 10) / 10
+                    scoreBeforeDebuff: Math.round(score * 10) / 10,
+                    score: Math.round(finalScore * 10) / 10
                 };
             }).sort(() => Math.floor(Math.random() * 2) == 1 ? -1 : 1);
 
@@ -242,7 +269,7 @@ export default class ResultsCommand extends TextInteraction {
                 console.log(margins);
 
                 //response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **score:** ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.min(50, Math.abs(results[index].score - results[index - 1].score)) / 10}L **margin:** ${distanceMarker}` : ""}`);
-                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **skill modifier:** ${Math.floor(results[index].skillBonus * 100000) / 100000} (used ${results[index].skillsUsed}), **score:** ${Math.floor(results[index].score * 100000) / 100000}) ${index >= 1 ? `**margin diff:** ${Math.floor((Math.min(100, Math.abs(results[index].score - results[index - 1].score))) * 100000) / 100000}L **margin:** ${distanceMarker}` : ""}`);
+                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **skill modifier:** ${Math.floor(results[index].skillBonus * 100000) / 100000} (used ${results[index].skillsUsed}), **score:** ${results[index].scoreBeforeDebuff} -> ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.floor((Math.min(100, Math.abs(results[index].score - results[index - 1].score))) * 100000) / 100000}L **margin:** ${distanceMarker}` : ""}`);
             }
 
             let image = await ImageService.drawScoreboard(RaceType.GradedDomestic, ScoreStatus.Final, DistanceType.Medium, placements, racerGateNumbers, margins, { turf: TrackConditionType.Good, dirt: TrackConditionType.Good });

@@ -148,7 +148,7 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
         });
 
         await (await message.fetch()).reply({
-            content: `${race.racers.length == 0 ? "No racers" : race.racers.map(racer => `[#${racer.gate}] ${racer.characterName}${race.type != RaceType.NonGraded ? ` [${racer.mood}] - ${racer.skillRolls.length}` : ""}`).join("\n")}`
+            content: `${race.racers.length == 0 ? "No racers" : race.racers.map(racer => `[#${racer.gate}] ${racer.characterName}${race.type != RaceType.NonGraded ? ` [${racer.mood}] - [RACER ORIGIN] - ${racer.skillRolls.length}` : ""}`).join("\n")}\n-# Race ID: ${race._id.toString()}`
         });
 
         function listenForButtonPress() {
