@@ -2,7 +2,7 @@
 import {AttachmentBuilder, Message, TextChannel} from "discord.js";
 import DiscordClient from "../../DiscordClient";
 import {RacerMood} from "../../services/RaceService/types/Racer";
-import {calculateGradedScore, numberSuffix, randomInt, roundToQuarter} from "../../utils";
+import {calculateSkillBonus, numberSuffix, randomInt, roundToQuarter} from "../../utils";
 import {DistanceType, MarginType, RaceType, TrackConditionType} from "../../services/RaceService/types/Race";
 import ImageService, {ScoreStatus} from "../../services/ImageService";
 
@@ -131,7 +131,7 @@ export default class ResultsCommand extends TextInteraction {
                 }
 
                 let skillsUsed = parseInt(match[4].trim());
-                let skillBonus = skillsUsed == 0 ? 0 : calculateGradedScore(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
+                let skillBonus = skillsUsed == 0 ? 0 : calculateSkillBonus(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
 
                 let moodPercentageModifier = 0.02;
 

@@ -9,7 +9,7 @@ export function getRandomUma() {
     return randomCharacterNames[Math.floor(Math.random() * randomCharacterNames.length)];
 }
 
-export function calculateGradedScore(rolls: number[]) {
+export function calculateSkillBonus(rolls: number[]) {
     const t = 5; // Saturation Constant
     const penalty = 5; // Underuse penalty
     const N0 = 30; // overuse threshold
