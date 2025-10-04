@@ -125,5 +125,6 @@ export function emojifyRaceName(raceName: string, client: DiscordClient): string
         .replaceAll(/[\[(]PRE-OPEN[\])]/gi, client.getEmojiString("racegrade_preopen"))
         .replaceAll(/[\[(]MAIDEN[\])]/gi, client.getEmojiString("racegrade_maiden"))
         .replaceAll(/[\[(]DEBUT[\])]/gi, client.getEmojiString("racegrade_debut"))
-        .replaceAll(/[\[(]EX[\])]/gi, client.getEmojiString("racegrade_exhibition"));
+        .replaceAll(/[\[(]EX[\])]/gi, client.getEmojiString("racegrade_exhibition"))
+        .replaceAll(/[\[(]FLOWER[\])]/gi, client.getEmojiString("racegrade_flower"));
 }
