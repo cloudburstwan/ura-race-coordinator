@@ -168,7 +168,7 @@ export default class ResultsCommand extends TextInteraction {
                 let finalScore = score;
                 if (debuffFlag != assignedType && race.surface == SurfaceType.Turf) {
                     // Assign debuff
-                    let debuffModifier = score * (debuffAdapted ? 0.025 : 0.05);
+                    let debuffModifier = score * (debuffAdapted ? 0.015 : 0.03);
                     finalScore = score - debuffModifier;
                 }
 
