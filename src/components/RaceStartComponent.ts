@@ -9,19 +9,9 @@ import {
 import {RacerMood} from "../services/RaceService/types/Racer";
 import DiscordClient from "../DiscordClient";
 import {randomInt} from "node:crypto";
-import {numberSuffix} from "../utils";
+import {emojifyRaceName, numberSuffix} from "../utils";
 
 export default function createRaceStartComponent(race: Race, client: DiscordClient) {
-    let raceName = race.name
-        .replaceAll(/[\[(]G1[\])]/gi, client.getEmojiString("racegrade_g1"))
-        .replaceAll(/[\[(]G2[\])]/gi, client.getEmojiString("racegrade_g2"))
-        .replaceAll(/[\[(]G3[\])]/gi, client.getEmojiString("racegrade_g3"))
-        .replaceAll(/[\[(]OPEN[\])]/gi, client.getEmojiString("racegrade_open"))
-        .replaceAll(/[\[(]PRE-OPEN[\])]/gi, client.getEmojiString("racegrade_preopen"))
-        .replaceAll(/[\[(]MAIDEN[\])]/gi, client.getEmojiString("racegrade_maiden"))
-        .replaceAll(/[\[(]DEBUT[\])]/gi, client.getEmojiString("racegrade_debut"))
-        .replaceAll(/[\[(]EX[\])]/gi, client.getEmojiString("racegrade_exhibition"));
-
     let condition: string;
     switch (race.trackCondition) {
         case TrackConditionType.Firm:
@@ -70,7 +60,7 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
 
     const component = new ContainerBuilder()
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`## ${race.name}\nIt's time for the race to begin. We will be racing on **${race.surface == SurfaceType.Turf ? "Turf" : "Dirt"}** (condition: **${condition}**) for a distance of **${race.distanceMetres} meters (${distanceName})**. It is **${weather}**.\n\n### Our contestants today are...`),
+            new TextDisplayBuilder().setContent(`## ${emojifyRaceName(race.name, client)}\nIt's time for the race to begin. We will be racing on **${race.surface == SurfaceType.Turf ? "Turf" : "Dirt"}** (condition: **${condition}**) for a distance of **${race.distanceMetres} meters (${distanceName})**. It is **${weather}**.\n\n### Our contestants today are...`),
         );
 
     let mentions: string[] = [];
