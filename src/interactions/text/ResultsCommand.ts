@@ -150,7 +150,7 @@ export default class ResultsCommand extends TextInteraction {
                     baseScore += value;
                 }
 
-                let skillsUsed = parseInt(match[4].trim());
+                let skillsUsed = parseInt(match[5].trim());
                 let skillBonus = skillsUsed == 0 ? 0 : calculateSkillBonus(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
 
                 let moodPercentageModifier = 0.02;
@@ -160,8 +160,8 @@ export default class ResultsCommand extends TextInteraction {
                 let scoreModifier = (baseScore + skillBonus) * moodPercentage;
                 let score = (baseScore + skillBonus) + scoreModifier;
 
-                let debuffFlag = match[5].trim().split("")[0];
-                let debuffAdapted = match[5].trim().split("")[1] == "A";
+                let debuffFlag = match[4].trim().split("")[0];
+                let debuffAdapted = match[4].trim().split("")[1] == "A";
 
                 let assignedType = race.type == RaceType.GradedInternational ? "I" : "D";
 
