@@ -163,10 +163,8 @@ export default class ResultsCommand extends TextInteraction {
                 let debuffFlag = match[4].trim().split("")[0];
                 let debuffAdapted = match[4].trim().split("")[1] == "A";
 
-                let assignedType = race.type == RaceType.GradedInternational ? "I" : "D";
-
                 let finalScore = score;
-                if (debuffFlag != assignedType && race.surface == SurfaceType.Turf) {
+                if (debuffFlag != "D" && race.surface == SurfaceType.Turf) {
                     // Assign debuff
                     let debuffModifier = score * (debuffAdapted ? 0.015 : 0.03);
                     finalScore = score - debuffModifier;
