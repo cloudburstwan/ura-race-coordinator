@@ -12,8 +12,8 @@ import {
 } from "../../services/RaceService/types/Race";
 import ImageService, {ScoreStatus} from "../../services/ImageService";
 
-const nonGradedRacerListRegex = /\[#(\d+)] ?(.+)/g;
-const gradedRacerListRegex = /\[#(\d+)] ?(.+) ?\[(-?\d)] ? - ?([ID]A?) ?- ?(\d+)/g
+const nonGradedRacerListRegex = /\[#(\d+)] *(.+)/g;
+const gradedRacerListRegex = /\[#(\d+)] *(.+) *\[(-?\d)] *- *([ID]A?) *- *(\d+)/g
 
 export default class ResultsCommand extends TextInteraction {
     public info = new TextCommandBuilder()
