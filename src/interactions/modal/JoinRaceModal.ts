@@ -8,7 +8,7 @@ export default class JoinRaceModal extends ModalInteraction {
 
     async execute(interaction: ModalSubmitInteraction, data: string[], client: DiscordClient): Promise<void> {
         let raceId = data[0];
-        let name = interaction.fields.getTextInputValue("name");
+        let name = interaction.fields.getField("name").value;
 
         try {
             await client.services.race.addRacer(raceId, interaction.member as GuildMember, name);
