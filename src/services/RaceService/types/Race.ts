@@ -23,6 +23,7 @@ export default class Race {
     public _id?: ObjectId;
 
     public racers: Racer[] = [];
+    public queued: Racer[] = [];
 
     constructor(name: string, type: RaceType, channelId: Snowflake, startingAt: Date, surface: SurfaceType, distance: number, weather: WeatherType, trackCondition: TrackConditionType, maxRacers: number, flag?: RaceFlag) {
         this.name = name;
@@ -57,10 +58,25 @@ export default class Race {
         this.racers.push(racer);
     }
 
+    addRacerToQueue(member: GuildMember, characterName: string) {
+        if (this.flag == "URARA_MEMORIAM" && characterName != "Haru Urara")
+            throw new RangeError(`This race is a memoriam for Haru Urara. Only Haru Urara is allowed to race. Try racing as Haru Urara!\n-# Even if you think you can't do it, just keep on pushing ahead. She would have wanted you to try your best no matter what.`);
+
+        let racer = new Racer(member.id, characterName);
+
+        this.queued.push(racer);
+    }
+
     removeRacer(member: GuildMember) {
         let index = this.racers.findIndex(race => race.memberId == member.id);
 
         this.racers.splice(index, 1);
+    }
+
+    removeRacerFromQueue(member: GuildMember) {
+        let index = this.queued.findIndex(race => race.memberId == member.id);
+
+        this.queued.splice(index, 1);
     }
 
     getResults() {
@@ -122,6 +138,9 @@ export default class Race {
 
         for (let i in data.racers) {
             result.racers[i] = Racer.fromDB(data.racers[i]);
+        }
+        for (let i in data.queued) {
+            result.queued[i] = Racer.fromDB(data.queued[i]);
         }
 
         return result;
