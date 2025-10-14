@@ -15,7 +15,7 @@ export default class JoinRaceButton extends ButtonPressInteraction {
     public id = "race-signup";
 
     async execute(interaction: ButtonInteraction, data: string[], client: DiscordClient): Promise<void> {
-        const characters = (await client.services.data.characters.find({ memberId: interaction.user.id }).toArray()).map(character => Character.fromDB(character))
+        //const characters = (await client.services.data.characters.find({ memberId: interaction.user.id }).toArray()).map(character => Character.fromDB(character))
         const race = client.services.race.races.find(race => race._id.toString() == data[0]);
 
         if (!race) {
