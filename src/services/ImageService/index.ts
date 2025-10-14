@@ -48,7 +48,7 @@ const imagePositions = {
 }
 
 export default class ImageService {
-    static async drawScoreboard(type: RaceType, status: ScoreStatus, distance: DistanceType, positionNumbers: number[], placements: number[], margins: { type: MarginType, value: number }[], condition: SurfaceInfo, timeOverride?: number) {
+    static async drawScoreboard(type: RaceType, status: ScoreStatus, distance: DistanceType, positionNumbers: number[], placements: number[], margins: { type: MarginType, value: number }[], condition: SurfaceInfo, timeOverride?: number, raceNumberOverride?: number) {
         let base = await loadImage(`${baseUrl}/base.png`);
 
         const canvas = createCanvas(base.width, base.height);
@@ -60,8 +60,12 @@ export default class ImageService {
         console.log("race number");
         let raceNumber: number;
 
-        if (type == RaceType.NonGraded) raceNumber = randomInt(1, 7);
-        else raceNumber = randomInt(8, 12);
+        if (raceNumberOverride)
+            raceNumber = raceNumberOverride;
+        else {
+            if (type == RaceType.NonGraded) raceNumber = randomInt(1, 7);
+            else raceNumber = randomInt(8, 12);
+        }
 
         let raceNumberImg = await loadImage(`${baseUrl}/components/race_number/${raceNumber}.png`);
 
