@@ -47,6 +47,9 @@ export default class RaceService {
         if (race.flag == "WEDDING_BOUQUET_THROW")
             channel = await client.guild.channels.fetch(client.config.channels.events.wedding_guest_chat) as PublicThreadChannel;
 
+        if (race.flag == "LEGEND_RACE")
+            channel = await client.guild.channels.fetch(client.config.channels.legend_announce) as TextChannel;
+
         if (newRace) {
             let message = await channel.send({
                 components: [ component ],
