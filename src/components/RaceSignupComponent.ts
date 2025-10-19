@@ -98,7 +98,7 @@ export default function createRaceSignupComponent(race: Race, client: DiscordCli
     } else {
         for (let racerIndex in race.racers) {
             component.addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`[#${useGate ? race.racers[racerIndex].gate : parseInt(racerIndex) + 1}] **${race.racers[racerIndex].characterName}** (<@${race.racers[racerIndex].memberId}>)`),
+                new TextDisplayBuilder().setContent(`[#${useGate ? race.racers[racerIndex].gate : parseInt(racerIndex) + 1}] **${race.racers[racerIndex].characterName}** ${race.flag == "LEGEND_RACE" && race.racers[racerIndex].memberId == client.config.users.legend_racer ? "" : `(<@${race.racers[racerIndex].memberId}>)`}`),
             );
         }
     }

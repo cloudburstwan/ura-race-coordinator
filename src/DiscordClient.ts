@@ -258,5 +258,8 @@ interface Config {
         events: {
             wedding_guest_chat: Snowflake
         }
+    },
+    users: {
+        legend_racer: Snowflake
     }
 }
