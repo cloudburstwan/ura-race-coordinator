@@ -254,6 +254,7 @@ interface Config {
         jp_announce: Snowflake,
         overseas_announce: Snowflake,
         daily_announce: Snowflake,
+        legend_announce: Snowflake,
         events: {
             wedding_guest_chat: Snowflake
         }
