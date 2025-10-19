@@ -50,38 +50,38 @@ export default class DisqualifyCommand extends SlashCommandInteraction {
         switch (reason) {
             case "NON_GRADED":
                 await client.services.data.disqualifications.insertOne(
-                    new Disqualification(user.id, 7 * 24 * 60 * 60 * 1000, `Did not attend non-graded race "${race}"`, DisqualificationType.Graded, 0)
+                    new Disqualification(user.id, 2 * 24 * 60 * 60 * 1000, `Did not attend non-graded race "${race}"`, DisqualificationType.Graded, 0)
                 )
                 component
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("# You have been disqualified from this weekends graded races."),
+                        new TextDisplayBuilder().setContent("# You have been disqualified from graded races for 2 days."),
                     )
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent(`Due to your failure to attend the **${race}**, or inform us of your inability or disinterest of racing in this race, **you have been made ineligible for all graded races during this weekend.**`),
+                        new TextDisplayBuilder().setContent(`Due to your failure to attend the **${race}**, or inform us of your inability or disinterest of racing in this race, **you have been made ineligible for all graded races for 2 days.**`),
                     )
                     .addSeparatorComponents(
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                     )
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("You may attempt to join another graded race **next week**, but you must turn up for any non-graded races you sign up for or you will be disqualified again."),
+                        new TextDisplayBuilder().setContent("You may attempt to join another graded race **in 2 days**, but you must turn up for any non-graded races you sign up for or you will be disqualified again."),
                     )
                 break;
             case "GRADED":
                 await client.services.data.disqualifications.insertOne(
-                    new Disqualification(user.id, 2 * 7 * 24 * 60 * 60 * 1000, `Did not attend graded race "${race}"`, DisqualificationType.Graded, 0)
+                    new Disqualification(user.id, 4 * 24 * 60 * 60 * 1000, `Did not attend graded race "${race}"`, DisqualificationType.Graded, 0)
                 )
                 component
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("# You have been made ineligible for all graded races for 2 weeks."),
+                        new TextDisplayBuilder().setContent("# You have been made ineligible for all graded races for 4 days."),
                     )
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent(`Due to your failure to attend the **${race}** graded race, or inform us of your ability or disinterest in racing in this race, **you have been made ineligible for all graded races for 14 days**.`),
+                        new TextDisplayBuilder().setContent(`Due to your failure to attend the **${race}** graded race, or inform us of your ability or disinterest in racing in this race, **you have been made ineligible for all graded races for 4 days**.`),
                     )
                     .addSeparatorComponents(
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                     )
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("You may attempt to join another graded race **in 14 days**, but you must turn up for any graded races you sign up for or you will be made ineligible again."),
+                        new TextDisplayBuilder().setContent("You may attempt to join another graded race **in 4 days**, but you must turn up for any graded races you sign up for or you will be made ineligible again."),
                     )
                 break;
         }
