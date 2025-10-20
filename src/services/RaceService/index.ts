@@ -159,6 +159,8 @@ export default class RaceService {
 
             if (["URARA_MEMORIAM", "WEDDING_BOUQUET_THROW"].includes(race.flag)) {
                 racer.assignMood(RacerMood.Great);
+            } else if (race.flag == "LEGEND_RACE" && racer.memberId == client.config.users.legend_racer) {
+                racer.assignMood(RacerMood.Great);
             } else {
                 racer.assignMood();
             }
