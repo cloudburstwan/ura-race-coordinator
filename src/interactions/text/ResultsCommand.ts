@@ -11,7 +11,7 @@ import {
     TrackConditionType
 } from "../../services/RaceService/types/Race";
 import ImageService, {ScoreStatus} from "../../services/ImageService";
-import { PNGStream } from "canvas";
+import {PNGStream} from "canvas";
 
 const nonGradedRacerListRegex = /\[#(\d+)] *(.+)/g;
 const gradedRacerListRegex = /\[#(\d+)] *(.+) *\[(-?\d|R)] *- *([ID]A?) *- *(\d+|R)/g
@@ -170,7 +170,7 @@ export default class ResultsCommand extends TextInteraction {
                 }
 
                 let moodPercentageModifier = 0.01;
-                let moodPercentage = moodPercentageModifier * mood;
+                let moodPercentage = moodPercentageModifier * (mood == RacerMood.Awful ? RacerMood.Bad : mood);
 
                 let scoreModifier = baseScore * moodPercentage;
                 let aftermood = baseScore + scoreModifier;
