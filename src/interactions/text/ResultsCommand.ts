@@ -11,23 +11,42 @@ import {
     TrackConditionType
 } from "../../services/RaceService/types/Race";
 import ImageService, {ScoreStatus} from "../../services/ImageService";
+import { PNGStream } from "canvas";
 
 const nonGradedRacerListRegex = /\[#(\d+)] *(.+)/g;
-const gradedRacerListRegex = /\[#(\d+)] *(.+) *\[(-?\d)] *- *([ID]A?) *- *(\d+)/g
+const gradedRacerListRegex = /\[#(\d+)] *(.+) *\[(-?\d|R)] *- *([ID]A?) *- *(\d+|R)/g
 
 export default class ResultsCommand extends TextInteraction {
     public info = new TextCommandBuilder()
         .setName("results")
-        .setRegexMatch(/!results (.+)/g)
+        .setRegexMatch(/!results (.+) (\d+)?/g)
         .addRole(process.env.RACE_STAFF_ROLE_ID);
 
+    public counts = {
+        total: 0,
+        great: 0,
+        good: 0,
+        normal: 0,
+        bad: 0,
+        awful: 0
+    }
+
     override async execute(message: Message, regexMatch: RegExpExecArray, client: DiscordClient) {
-        if (!message.reference) {
+        if (!message.reference && regexMatch[2] == undefined) {
             await message.reply("You didn't reply to a message. Please reply to a message containing a list of racers and their rolled numbers");
             return;
         }
 
-        let referencedMessage = await message.fetchReference();
+        let referencedMessage:Message;
+        if (regexMatch[2] != undefined)
+            referencedMessage = await message.channel.messages.fetch(regexMatch[2]);
+        else
+            referencedMessage = await message.fetchReference();
+
+        if (referencedMessage == null) {
+            await message.reply("invalid message");
+            return;
+        }
 
         let mode = regexMatch[1];
 
@@ -137,7 +156,7 @@ export default class ResultsCommand extends TextInteraction {
                 gradedRacerListRegex.lastIndex = 0;
                 let match = gradedRacerListRegex.exec(line);
 
-                let mood: RacerMood = parseInt(match[3].trim());
+                let mood: RacerMood = match[3].trim() == "R" ? randomInt(-2,2) : parseInt(match[3].trim());
 
                 let stages: number[] = [];
 
@@ -150,15 +169,16 @@ export default class ResultsCommand extends TextInteraction {
                     baseScore += value;
                 }
 
-                let skillsUsed = parseInt(match[5].trim());
-                let skillBonus = skillsUsed == 0 ? 0 : calculateSkillBonus(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
-
-                let moodPercentageModifier = 0.02;
-
+                let moodPercentageModifier = 0.01;
                 let moodPercentage = moodPercentageModifier * mood;
 
-                let scoreModifier = (baseScore + skillBonus) * moodPercentage;
-                let score = (baseScore + skillBonus) + scoreModifier;
+                let scoreModifier = baseScore * moodPercentage;
+                let aftermood = baseScore + scoreModifier;
+
+                let skillsUsed = match[5].trim() == "R" ? randomInt(0, 40) : parseInt(match[5].trim());
+                let skillBonus = skillsUsed == 0 ? 0 : calculateSkillBonus(Array.from({ length: skillsUsed }, () => randomInt(1, 20)));
+
+                let score = aftermood + skillBonus;
 
                 let debuffFlag = match[4].trim().split("")[0];
                 let debuffAdapted = match[4].trim().split("")[1] == "A";
@@ -272,11 +292,37 @@ export default class ResultsCommand extends TextInteraction {
                 console.log(racerGateNumbers);
                 console.log(margins);
 
+                if (index == 0 && regexMatch[2] != undefined) {
+                    switch (results[index].mood) {
+                        case RacerMood.Great:
+                            this.counts.great++;
+                            break;
+                        case RacerMood.Good:
+                            this.counts.good++;
+                            break;
+                        case RacerMood.Normal:
+                            this.counts.normal++;
+                            break;
+                        case RacerMood.Bad:
+                            this.counts.bad++;
+                            break;
+                        case RacerMood.Awful:
+                            this.counts.awful++;
+                            break;
+                    }
+                    this.counts.total++;
+                }
+
                 //response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **score:** ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.min(50, Math.abs(results[index].score - results[index - 1].score)) / 10}L **margin:** ${distanceMarker}` : ""}`);
                 response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **skill modifier:** ${Math.floor(results[index].skillBonus * 100000) / 100000} (used ${results[index].skillsUsed}), **score:** ${results[index].scoreBeforeDebuff} -> ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.floor((Math.min(100, Math.abs(results[index].score - results[index - 1].score))) * 100000) / 100000}L **margin:** ${distanceMarker}` : ""}`);
             }
 
-            let image = await ImageService.drawScoreboard(race.type, ScoreStatus.Final, race.distance, placements, racerGateNumbers, margins, { turf: race.trackCondition, dirt: race.trackCondition });
+            let image: PNGStream = undefined;
+
+            if (regexMatch[2] == undefined)
+                image = await ImageService.drawScoreboard(race.type, ScoreStatus.Final, race.distance, placements, racerGateNumbers, margins, { turf: race.trackCondition, dirt: race.trackCondition });
+
+            response.push(`\ntotal: ${this.counts.total} | ${this.counts.great} ${this.counts.good} ${this.counts.normal} ${this.counts.bad} ${this.counts.awful}`);
 
             if (response.join("\n").length > 2000) {
                 let chunks: string[][] = [];
@@ -303,14 +349,15 @@ export default class ResultsCommand extends TextInteraction {
                     } else
                         await (message.channel as TextChannel).send(msgChunk.join("\n"));
                 }
-                await (message.channel as TextChannel).send({
-                    content: "scoreboard image",
-                    files: [ new AttachmentBuilder(image).setName("scoreboard.png") ]
-                });
+                if(image != undefined)
+                    await (message.channel as TextChannel).send({
+                        content: "scoreboard image",
+                        files: [ new AttachmentBuilder(image).setName("scoreboard.png") ]
+                    });
             } else
                 await message.reply({
                     content: response.join("\n"),
-                    files: [ new AttachmentBuilder(image).setName("scoreboard.png") ]
+                    files: image != undefined ? [ new AttachmentBuilder(image).setName("scoreboard.png") ] : []
                 });
         } else {
             await message.reply(`Unknown mode: "${mode}". Valid modes are: "none", "graded"`);
