@@ -22,15 +22,6 @@ export default class ResultsCommand extends TextInteraction {
         .setRegexMatch(/!results (.+) ?(\d+)?/g)
         .addRole(process.env.RACE_STAFF_ROLE_ID);
 
-    public counts = {
-        total: 0,
-        great: 0,
-        good: 0,
-        normal: 0,
-        bad: 0,
-        awful: 0
-    }
-
     override async execute(message: Message, regexMatch: RegExpExecArray, client: DiscordClient) {
         if (!message.reference && regexMatch[2] == undefined) {
             await message.reply("You didn't reply to a message. Please reply to a message containing a list of racers and their rolled numbers");
@@ -196,6 +187,7 @@ export default class ResultsCommand extends TextInteraction {
                     baseScore,
                     mood,
                     moodPercentage,
+                    aftermood,
                     skillsUsed,
                     skillBonus,
                     stages,
@@ -292,37 +284,14 @@ export default class ResultsCommand extends TextInteraction {
                 console.log(racerGateNumbers);
                 console.log(margins);
 
-                if (index == 0 && regexMatch[2] != undefined) {
-                    switch (results[index].mood) {
-                        case RacerMood.Great:
-                            this.counts.great++;
-                            break;
-                        case RacerMood.Good:
-                            this.counts.good++;
-                            break;
-                        case RacerMood.Normal:
-                            this.counts.normal++;
-                            break;
-                        case RacerMood.Bad:
-                            this.counts.bad++;
-                            break;
-                        case RacerMood.Awful:
-                            this.counts.awful++;
-                            break;
-                    }
-                    this.counts.total++;
-                }
-
                 //response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **score:** ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.min(50, Math.abs(results[index].score - results[index - 1].score)) / 10}L **margin:** ${distanceMarker}` : ""}`);
-                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **skill modifier:** ${Math.floor(results[index].skillBonus * 100000) / 100000} (used ${results[index].skillsUsed}), **score:** ${results[index].scoreBeforeDebuff} -> ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.floor((Math.min(100, Math.abs(results[index].score - results[index - 1].score))) * 100000) / 100000}L **margin:** ${distanceMarker}` : ""}`);
+                response.push(`**${index - offset}${numberSuffix(index - offset)}**: ${results[index].name} [${moodName}] (**stages:** [${results[index].stages.join(", ")}], **skill modifier:** ${Math.floor(results[index].skillBonus * 100000) / 100000} (used ${results[index].skillsUsed}), **score:** ${results[index].baseScore} -> ${results[index].aftermood} -> ${results[index].scoreBeforeDebuff} -> ${results[index].score}) ${index >= 1 ? `**margin diff:** ${Math.floor((Math.min(100, Math.abs(results[index].score - results[index - 1].score))) * 100000) / 100000}L **margin:** ${distanceMarker}` : ""}`);
             }
 
             let image: PNGStream = undefined;
 
             if (regexMatch[2] == undefined)
                 image = await ImageService.drawScoreboard(race.type, ScoreStatus.Final, race.distance, placements, racerGateNumbers, margins, { turf: race.trackCondition, dirt: race.trackCondition });
-
-            response.push(`\ntotal: ${this.counts.total} | ${this.counts.great} ${this.counts.good} ${this.counts.normal} ${this.counts.bad} ${this.counts.awful}`);
 
             if (response.join("\n").length > 2000) {
                 let chunks: string[][] = [];
