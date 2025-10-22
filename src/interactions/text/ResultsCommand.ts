@@ -19,7 +19,7 @@ const gradedRacerListRegex = /\[#(\d+)] *(.+) *\[(-?\d|R)] *- *([ID]A?) *- *(\d+
 export default class ResultsCommand extends TextInteraction {
     public info = new TextCommandBuilder()
         .setName("results")
-        .setRegexMatch(/!results (.+) (\d+)?/g)
+        .setRegexMatch(/!results (.+) ?(\d+)?/g)
         .addRole(process.env.RACE_STAFF_ROLE_ID);
 
     public counts = {
