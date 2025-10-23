@@ -153,7 +153,7 @@ export default class ResultsCommand extends TextInteraction {
                 let stages: number[] = [];
 
                 for (let i = 0; i < 4; i++) {
-                    if (race.flag == "LEGEND_RACE" && racer.memberId == client.config.users.legend_racer)
+                    if (race.flag == "LEGEND_RACE" && racer != undefined && racer.memberId == client.config.users.legend_racer)
                         stages.push(randomInt(16,22));
                     else
                         stages.push(randomInt(8, 10) + randomInt(8, 10));
