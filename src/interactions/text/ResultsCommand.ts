@@ -148,11 +148,15 @@ export default class ResultsCommand extends TextInteraction {
                 let match = gradedRacerListRegex.exec(line);
 
                 let mood: RacerMood = match[3].trim() == "R" ? randomInt(-2,2) : parseInt(match[3].trim());
+                let racer = race.racers.find(racer => racer.characterName == match[2].trim());
 
                 let stages: number[] = [];
 
                 for (let i = 0; i < 4; i++) {
-                    stages.push(randomInt(8, 10) + randomInt(8, 10));
+                    if (race.flag == "LEGEND_RACE" && racer.memberId == client.config.users.legend_racer)
+                        stages.push(randomInt(16,22));
+                    else
+                        stages.push(randomInt(8, 10) + randomInt(8, 10));
                 }
 
                 let baseScore = 0;
