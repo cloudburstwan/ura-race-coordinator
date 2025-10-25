@@ -91,6 +91,7 @@ export default class ImageService {
         console.log("position");
         // Position Number
         for (let i = 0; i < Math.min(5, positionNumbers.length); i++) {
+            if (positionNumbers[i] == undefined) continue;
             let image = await loadImage(`${baseUrl}/components/position/${positionNumbers[i]}.png`);
 
             ctx.drawImage(image, imagePositions.position[i][0], imagePositions.position[i][1]);
@@ -128,6 +129,7 @@ export default class ImageService {
                     break;
                 case MarginType.Number:
                     let fraction: string;
+                    console.log(value);
                     switch (value % 1) {
                         case 0.25:
                             fraction = "1-4";
@@ -163,6 +165,7 @@ export default class ImageService {
                 default:
                     imgName = null;
             }
+            console.log(margins[i].type);
             console.log(imgName);
             if (imgName == null) continue;
             let img = await loadImage(`${baseUrl}/components/scores/${imgName}.png`);

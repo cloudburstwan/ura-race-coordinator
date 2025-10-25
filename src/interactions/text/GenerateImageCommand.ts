@@ -9,7 +9,7 @@ export default class GenerateImageCommand extends TextInteraction {
     public info = new TextCommandBuilder()
         .setName("generateImage")
         // !generateImage GRADE RACE_STATE DISTANCE POSITION_NUMBERS RACER_BRACKETS MARGINS CONDITION TIME RACE_NUMBER
-        .setRegexMatch(/!generateImage (graded|none) (none|review|final) (sprint|mile|medium|long) ((?:\d,?){5}) ((?:\d,?){5}) \[((?:(?:NONE|NUMBER|NECK|HEAD|NOSE|DEADHEAD|DISTANCE)-\d(?:\.\d*)?,?){4})] (firm|good|soft|heavy) (\d{1,4}) (\d{1,2})/gi)
+        .setRegexMatch(/!generateImage (graded|none) (none|review|final) (sprint|mile|medium|long) ((?:\d,?){5}) ((?:\d+,?){5}) \[((?:(?:NONE|NUMBER|NECK|HEAD|NOSE|DEADHEAD|DISTANCE)-\d(?:\.\d*)?,?){4})] (firm|good|soft|heavy) (\d{1,4}) (\d{1,2})/gi)
         .addRole(process.env.RACE_STAFF_ROLE_ID);
 
     override async execute(message: Message, regexMatch: RegExpExecArray, client: DiscordClient) {
@@ -41,7 +41,7 @@ export default class GenerateImageCommand extends TextInteraction {
                 distanceType = DistanceType.Long;
                 break;
         }
-        let positionNumbers: number[] = regexMatch[4].split(",").map(value => parseInt(value));
+        let positionNumbers: number[] = regexMatch[4].split(",").map(value => value == "0" ? undefined : parseInt(value));
         let placements: number[] = regexMatch[5].split(",").map(value => value == "0" ? undefined : parseInt(value));
         let margins: {type: MarginType, value: number}[] = regexMatch[6].split(",").map(value => {
             let marginType: MarginType;
