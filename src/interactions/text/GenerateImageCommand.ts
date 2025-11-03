@@ -70,7 +70,7 @@ export default class GenerateImageCommand extends TextInteraction {
             }
             return {
                 type: marginType,
-                value: parseInt(value.split("-")[1])
+                value: parseFloat(value.split("-")[1])
             };
         });
         let condition: TrackConditionType;
