@@ -173,7 +173,7 @@ export default class RaceCreateSubcommand extends SubcommandInteraction {
 
         let channelId = await client.services.race.createRace(race, client);
 
-        await interaction.reply(`Successfully created a race called "${outputRaceName}"! The announcement message is in <#${channelId}>. You will need to ping the role yourself because Discord is a small indie company.`);
+        await interaction.reply(`Successfully created a race called "${outputRaceName}" with id of \`${race._id.toString()}\`! The announcement message is in <#${channelId}>. You will need to ping the role yourself because Discord is a small indie company.`);
     }
 
     public async autocomplete(interaction: AutocompleteInteraction, client: DiscordClient) {
