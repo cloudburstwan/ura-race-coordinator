@@ -68,9 +68,39 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
 
     let mentions: string[] = [];
 
-    let racersWithFavourites = race.racers
-        .map(racer => Object.assign({ favouritePositionDecider: randomInt(0, 200) }, racer))
-        .sort((racer1, racer2) => racer1.favouritePositionDecider < racer2.favouritePositionDecider ? -1 : 1);
+    let takenFavoritePositions = [];
+
+    // Populate with existing overridden favorite positions
+    for (let identifier in client.config.overrides.favorite) {
+        let position = 0;
+        switch (client.config.overrides.favorite[identifier]) {
+            case "L": // Always last place
+                position = race.racers.length;
+                break;
+            default:
+                position = client.config.overrides.favorite[identifier];
+        }
+
+        takenFavoritePositions.push(position);
+    }
+
+    let racersWithFavorites = race.racers
+        .map(racer => {
+            let possibleFavoritePositions = [];
+
+            for (let i = 0; i < race.racers.length; i++) {
+                if (!takenFavoritePositions.includes(i+1))
+                    possibleFavoritePositions.push(i+1);
+            }
+
+            let favorite = Object.keys(client.config.overrides.favorite).includes(`${racer.memberId}/${racer.characterName}`) ?
+                (client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`] == "L" ? race.racers.length : client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`]) :
+                possibleFavoritePositions[Math.floor(Math.random() * possibleFavoritePositions.length)];
+            takenFavoritePositions.push(favorite);
+
+            return Object.assign({ favoritePosition: favorite }, racer);
+        })
+        .sort((racer1, racer2) => racer1.favoritePosition < racer2.favoritePosition ? -1 : 1);
 
     for (let index in race.racers) {
         let moodEmojiCombo: string;
@@ -92,7 +122,7 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
                 break;
         }
 
-        let favouritePosition = racersWithFavourites.findIndex(racer => racer.memberId == race.racers[index].memberId && racer.characterName == race.racers[index].characterName)
+        let favouritePosition = racersWithFavorites.findIndex(racer => racer.memberId == race.racers[index].memberId && racer.characterName == race.racers[index].characterName)
 
         component.addTextDisplayComponents(
             new TextDisplayBuilder().setContent(`[#${race.racers[index].gate}] **${race.racers[index].characterName}** ${moodEmojiCombo} [${favouritePosition < 3 ? "**" : ""}${favouritePosition+1}${numberSuffix(favouritePosition+1)} favorite${favouritePosition < 3 ? "**" : ""}]`),
