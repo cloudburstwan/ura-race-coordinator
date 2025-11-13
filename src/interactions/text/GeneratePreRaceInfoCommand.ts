@@ -116,10 +116,13 @@ export default class GeneratePreRaceInfoCommand extends TextInteraction {
                     break;
             }
 
-            return `[#${gate}] \*\*${name}\*\* ${moodEmote} [${favorite <= 3 ? "\*\*" : ""}${favorite}${numberSuffix(favorite)} favorite${favorite <= 3 ? "\*\*" : ""}]`;
+            return {
+                gate,
+                str: `[#${gate}] \*\*${name}\*\* ${moodEmote} [${favorite <= 3 ? "\*\*" : ""}${favorite}${numberSuffix(favorite)} favorite${favorite <= 3 ? "\*\*" : ""}]`
+            }
         });
 
-        await message.reply(output.join("\n"));
+        await message.reply(output.sort((obj1, obj2) => obj1.gate < obj2.gate ? -1 : 1).map(obj => obj.str).join("\n"));
     }
 }
 
