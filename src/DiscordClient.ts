@@ -261,5 +261,11 @@ interface Config {
     },
     users: {
         legend_racer: Snowflake
+    },
+    overrides: {
+        favorite: {
+            // [User ID]/[Character Name]: position number or "L" (last)
+            [key: `${Snowflake}/${string}`]: number | "L"
+        }
     }
 }
