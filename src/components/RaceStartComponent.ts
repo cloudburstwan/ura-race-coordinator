@@ -70,6 +70,11 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
 
     let takenFavoritePositions = [];
 
+    // Populate with legend racer favorite override
+    if (race.flag == "LEGEND_RACE") {
+        takenFavoritePositions.push(1);
+    }
+
     // Populate with existing overridden favorite positions
     for (let identifier in client.config.overrides.favorite) {
         let position = 0;
@@ -93,9 +98,18 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
                     possibleFavoritePositions.push(i+1);
             }
 
-            let favorite = Object.keys(client.config.overrides.favorite).includes(`${racer.memberId}/${racer.characterName}`) ?
-                (client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`] == "L" ? race.racers.length : client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`]) :
-                possibleFavoritePositions[Math.floor(Math.random() * possibleFavoritePositions.length)];
+            let favorite = possibleFavoritePositions[Math.floor(Math.random() * possibleFavoritePositions.length)];
+
+            if (race.flag == "LEGEND_RACE" && racer.memberId == client.config.users.legend_racer) {
+                favorite = 1;
+            }
+
+            if (Object.keys(client.config.overrides.favorite).includes(`${racer.memberId}/${racer.characterName}`) && race.flag != "LEGEND_RACE") {
+                favorite = client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`] == "L" ?
+                    race.racers.length :
+                    client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`];
+            }
+
             takenFavoritePositions.push(favorite);
 
             return Object.assign({ favoritePosition: favorite }, racer);
