@@ -3,6 +3,9 @@ import DiscordClient from "../DiscordClient";
 import {CollectorFilter, DMChannel, Message, TextChannel} from "discord.js";
 import {Collection} from "mongodb";
 
+/**
+ * Get a random Umamusume name from a preset list of known Umamusume.
+ */
 export function getRandomUma() {
     const randomCharacterNames = ["Special Week", "Silence Suzuka", "Gold Ship", "Haru Urara", "Rice Shower", "Grass Wonder", "El Condor Pasa", "Symboli Rudolf", "Air Groove", "Tokai Teio", "Mejiro Mcqueen", "Agnes Tachyon", "Matikanetannhäuser", "Curren Chan"];
 
