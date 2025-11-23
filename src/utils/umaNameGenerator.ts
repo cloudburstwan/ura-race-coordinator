@@ -51,7 +51,7 @@ export function generateUmamusumeName() {
         "Volatile", "Magnetic", "Sinister", "Ruthless", "Unbreakable",
         "Golden","Brown","Caramel","Bronze","Ruby", "Hishi",
         "Mahogany", "Ebony", "Skibidi", "Matikane", "Strawhat",
-        "Aston"
+        "Aston", "Machan", "Grass", "Wonder"
     ];
 
 
@@ -108,7 +108,7 @@ export function generateUmamusumeName() {
         "Charlotte", "Ida", "Marie", "Frieda", "Mathilda",
         "Greta", "Leni", "Johanna", "Luisa", "Helena",
         "Anneliese", "Klara", "Isabell", "Lotte", "Magdalena", "Tannhauser",
-        "Machan"
+        "Aston", "Machan", "Grass", "Wonder"
     ];
 
     return Frags_First[Math.floor(Math.random() * Frags_First.length)] + " " + Frags_Second[Math.floor(Math.random() * Frags_Second.length)]
