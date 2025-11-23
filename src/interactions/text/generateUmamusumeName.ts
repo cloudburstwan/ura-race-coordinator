@@ -10,7 +10,7 @@ const gradedRacerListRegex = /(.+) ?- ?(\d+)/g
 export default class GenerateUmamusumeNameCommand extends TextInteraction {
     public info = new TextCommandBuilder()
         .setName("generateUmamusumeName")
-        .setRegexMatch(/!generateUmamusumeName (\d*)/g)
+        .setRegexMatch(/!generateUmamusumeNames? ?(\d*)/g)
         .addRole(process.env.RACE_STAFF_ROLE_ID);
 
     override async execute(message: Message, regexMatch: RegExpExecArray, client: DiscordClient) {
@@ -21,6 +21,6 @@ export default class GenerateUmamusumeNameCommand extends TextInteraction {
             output.push(generateUmamusumeName());
         }
 
-        await message.reply(output.join(","));
+        await message.reply(output.join(", "));
     }
 }
