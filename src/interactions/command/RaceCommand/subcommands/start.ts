@@ -23,6 +23,7 @@ import {
 } from "../../../../services/RaceService/types/Race";
 import {RacerMood} from "../../../../services/RaceService/types/Racer";
 import createRaceStartComponent from "../../../../components/RaceStartComponent";
+import {truncate} from "../../../../utils";
 
 export default class RaceStartSubcommand extends SubcommandInteraction {
     public info = new SlashCommandSubcommandBuilder()
@@ -77,7 +78,7 @@ export default class RaceStartSubcommand extends SubcommandInteraction {
                 await interaction.respond(client.services.race.races.filter(race => {
                     return [RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status);
                 }).map(race => {
-                    return {name: race.name, value: race._id.toString()}
+                    return {name: truncate(race.name, 99, true), value: race._id.toString()}
                 }).filter(race => {
                     return race.name.includes(focusedValue.value);
                 }));
