@@ -131,3 +131,15 @@ export function emojifyRaceName(raceName: string, client: DiscordClient): string
         .replaceAll(/[\[(]EX[\])]/gi, client.getEmojiString("racegrade_exhibition"))
         .replaceAll(/[\[(]FLOWER[\])]/gi, client.getEmojiString("racegrade_flower"));
 }
+
+/**
+ * Truncates the string at maxLength, with optional ellipse (...)
+ * @caution If `useEllipse`, `maxLength` is automatically lowered by 3 to ensure
+ * the string you receive is exactly `maxLength` or lower.
+ * @param string The string to truncate
+ * @param maxLength The maximum length of the output string
+ * @param useEllipse Whether to use ellipse at the end to imply that the string has been truncated (default: true)
+ */
+export function truncate(string: string, maxLength: number, useEllipse: boolean = true) {
+    return `${string.split("").splice(0, useEllipse ? maxLength-3 : maxLength).join("")}${useEllipse ? "..." : ""}`;
+}
