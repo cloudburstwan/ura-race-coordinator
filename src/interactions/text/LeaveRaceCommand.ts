@@ -16,7 +16,7 @@ export default class ResultsCommand extends TextInteraction {
         let ids = regexMatch[1].split(" ");
 
         try {
-            await client.services.race.removeRacer(ids[0], ids[1] ? await message.guild.members.fetch(ids[1]) : message.member, true);
+            await client.services.race.removeRacer(ids[0], ids[1] ? ids[1] : message.member.id, true);
             await message.react("✅");
         } catch (e) {
             await message.react("❌");

@@ -123,7 +123,7 @@ export default class RaceService {
         }
     }
 
-    public async removeRacer(raceId: string, member: GuildMember, force: boolean = false) {
+    public async removeRacer(raceId: string, memberId: Snowflake, force: boolean = false) {
         let race = this.races.find(race => race._id.toString() == raceId);
 
         if (!race)
@@ -132,10 +132,10 @@ export default class RaceService {
         if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status) && !force)
             throw new RaceError("RACE_IN_PROGRESS_OR_OVER", "Cannot resign from a race that is in progress / over");
 
-        if (!race.racers.some(racer => racer.memberId == member.id))
+        if (!race.racers.some(racer => racer.memberId == memberId))
             throw new RaceError("MEMBER_NOT_JOINED", "Member has not joined this race");
 
-        race.removeRacer(member);
+        race.removeRacer(memberId);
 
         await this.DataService.races.updateOne({ _id: race._id }, { $set: race });
 

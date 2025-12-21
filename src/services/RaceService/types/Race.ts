@@ -58,25 +58,10 @@ export default class Race {
         this.racers.push(racer);
     }
 
-    addRacerToQueue(member: GuildMember, characterName: string) {
-        if (this.flag == "URARA_MEMORIAM" && characterName != "Haru Urara")
-            throw new RangeError(`This race is a memoriam for Haru Urara. Only Haru Urara is allowed to race. Try racing as Haru Urara!\n-# Even if you think you can't do it, just keep on pushing ahead. She would have wanted you to try your best no matter what.`);
-
-        let racer = new Racer(member.id, characterName);
-
-        this.queued.push(racer);
-    }
-
-    removeRacer(member: GuildMember) {
-        let index = this.racers.findIndex(race => race.memberId == member.id);
+    removeRacer(memberId: Snowflake) {
+        let index = this.racers.findIndex(race => race.memberId == memberId);
 
         this.racers.splice(index, 1);
-    }
-
-    removeRacerFromQueue(member: GuildMember) {
-        let index = this.queued.findIndex(race => race.memberId == member.id);
-
-        this.queued.splice(index, 1);
     }
 
     getResults() {
@@ -94,26 +79,26 @@ export default class Race {
 
                 racer.overallScore = 0;
 
-                // TODO: Actually write this code
+                if (this.flag != "URARA_MEMORIAM") {
+                    // TODO: Actually write this code
+                }
             });
 
             this.racers.sort(() => Math.floor(Math.random() * 2) == 1 ? -1 : 1); // Tiebreak
             this.racers.sort((a, b) => a.overallScore > b.overallScore ? -1 : 1);
 
-            let offset = -1;
             for (let place in this.racers) {
                 let index = parseInt(place);
                 let marginType: MarginType = MarginType.None;
                 let distance: number = 0;
                 if (index >= 1 && this.racers[index-1].overallScore == this.racers[index].overallScore) {
                     marginType = MarginType.DeadHeat;
-                    offset++;
                 } else if (index >= 1) {
                     // TODO: Write placement code
                 }
 
                 placements.push({
-                    position: index-offset,
+                    position: marginType == MarginType.DeadHeat ? index - 1 : index,
                     gate: (this.racers[index] as ({gate: number} & Racer)).gate,
                     racer: this.racers[index],
                     marginType: marginType,
