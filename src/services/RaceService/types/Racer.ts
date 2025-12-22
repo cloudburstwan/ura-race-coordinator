@@ -26,10 +26,10 @@ export default class Racer {
             this.mood = mood;
         else {
             let moodRandom = randomInt(1, 20);
-            if (moodRandom <= 4) this.mood = RacerMood.Awful; else
-            if (moodRandom <= 8) this.mood = RacerMood.Bad; else
-            if (moodRandom <= 12) this.mood = RacerMood.Normal; else
-            if (moodRandom <= 16) this.mood = RacerMood.Good; else
+            if (moodRandom <= 3) this.mood = RacerMood.Awful; else
+            if (moodRandom <= 7) this.mood = RacerMood.Bad; else
+            if (moodRandom <= 13) this.mood = RacerMood.Normal; else
+            if (moodRandom <= 17) this.mood = RacerMood.Good; else
             if (moodRandom <= 20) this.mood = RacerMood.Great;
         }
 
