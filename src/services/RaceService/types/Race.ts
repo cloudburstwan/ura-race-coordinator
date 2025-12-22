@@ -132,11 +132,12 @@ export default class Race {
     }
 }
 
-export type RaceFlag = "URARA_MEMORIAM" | "WEDDING_BOUQUET_THROW" | "LEGEND_RACE";
+export type RaceFlag = "URARA_MEMORIAM" | "WEDDING_BOUQUET_THROW" | "LEGEND_RACE" | "SPECIAL";
 export const RaceFlagOptions: {name: string, value: RaceFlag}[] = [
     { name: "Haru Urara Memoriam", value: "URARA_MEMORIAM" },
     { name: "Weddings: Bouquet Throw (Configure in config!)", value: "WEDDING_BOUQUET_THROW" },
-    { name: "Legend Race", value: "LEGEND_RACE" }
+    { name: "Legend Race", value: "LEGEND_RACE" },
+    { name: "Special (Cosmetic)", value: "SPECIAL" }
 ]
 
 export interface Placement {
