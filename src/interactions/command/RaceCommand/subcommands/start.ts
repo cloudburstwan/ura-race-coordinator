@@ -75,7 +75,7 @@ export default class RaceStartSubcommand extends SubcommandInteraction {
 
         switch (focusedValue.name) {
             case "race":
-                await interaction.respond(client.services.race.races.filter(race => {
+                await interaction.respond((await client.services.race.getRaces()).filter(race => {
                     return [RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status);
                 }).map(race => {
                     return {name: truncate(race.name, 99, true), value: race._id.toString()}

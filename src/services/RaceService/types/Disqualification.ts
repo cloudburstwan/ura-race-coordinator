@@ -20,6 +20,9 @@ export default class Disqualification {
     }
 
     public static fromDB(data: Disqualification) {
+        if (data === null) return null;
+        if (data === undefined) return undefined;
+
         let result = new this(data.memberId, 0, data.reason, data.type, data.flags);
 
         result.createdAt = data.createdAt;

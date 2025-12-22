@@ -113,6 +113,9 @@ export default class Race {
     }
 
     public static fromDB(data: Race) {
+        if (data === null) return null;
+        if (data === undefined) return undefined;
+
         let result = new this(data.name, data.type, data.channelId, data.startingAt, data.surface, data.distance, data.weather, data.trackCondition, data.maxRacers, data.flag);
 
         result.status = data.status;

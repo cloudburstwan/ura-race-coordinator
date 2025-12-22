@@ -15,19 +15,15 @@ import {
 import {RacerMood} from "./types/Racer";
 import createRaceSignupComponent from "../../components/RaceSignupComponent";
 import Disqualification, {DisqualificationType} from "./types/Disqualification";
-import {Filter} from "mongodb";
+import {Filter, ObjectId} from "mongodb";
 
 export default class RaceService {
-    public races: Race[] = [];
-
     private Client: DiscordClient;
     private DataService: DataService;
 
     constructor(dataService: DataService, client: DiscordClient) {
         this.DataService = dataService;
         this.Client = client;
-
-        this.loadRaceData()
     }
 
     public async updateRaceMessage(race: Race, client: DiscordClient, newRace: boolean = false, useGate: boolean = false): Promise<{ channel: Snowflake, message: Snowflake } | void> {
@@ -76,13 +72,12 @@ export default class RaceService {
 
         race.messageId = msg.message;
 
-        this.races.push(race);
         await this.DataService.races.updateOne({ _id: result.insertedId }, { $set: race });
         return msg.channel;
     }
 
     public async addRacer(raceId: string, member: GuildMember, characterName: string, force: boolean = false) {
-        let race = this.races.find(race => race._id.toString() == raceId);
+        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(characterName) }));
         const linkRegex = /(.+):\/\/(.+)/g;
 
         if (!race)
@@ -124,7 +119,7 @@ export default class RaceService {
     }
 
     public async removeRacer(raceId: string, memberId: Snowflake, force: boolean = false) {
-        let race = this.races.find(race => race._id.toString() == raceId);
+        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
 
         if (!race)
             throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
@@ -144,7 +139,7 @@ export default class RaceService {
 
     public async startRace(raceId: string, client: DiscordClient) {
         // Starts a race.
-        let race = this.races.find(race => race._id.toString() == raceId);
+        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
 
         if (!race)
             throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
@@ -174,7 +169,7 @@ export default class RaceService {
     }
 
     public async getResults(raceId: string) {
-        let race = this.races.find(race => race._id.toString() == raceId);
+        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
 
         if (!race)
             throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
@@ -186,7 +181,7 @@ export default class RaceService {
     }
 
     public async endRace(raceId: string, client: DiscordClient) {
-        let race = this.races.find(race => race._id.toString() == raceId);
+        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
 
         if (!race)
             throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
@@ -201,9 +196,8 @@ export default class RaceService {
         await this.updateRaceMessage(race, client);
     }
 
-    private async loadRaceData() {
-        this.races = (await this.DataService.races.find().toArray()).map(race => Race.fromDB(race));
-        console.log(this.races);
+    public async getRaces() {
+        return (await this.DataService.races.find().toArray()).map((race) => Race.fromDB(race));
     }
 }
 

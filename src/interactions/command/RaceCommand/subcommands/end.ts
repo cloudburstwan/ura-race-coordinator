@@ -22,6 +22,7 @@ import Race, {
 } from "../../../../services/RaceService/types/Race";
 import {RacerMood} from "../../../../services/RaceService/types/Racer";
 import {numberSuffix, randomInt, truncate} from "../../../../utils";
+import {ObjectId} from "mongodb";
 
 export default class RaceEndSubcommand extends SubcommandInteraction {
     public info = new SlashCommandSubcommandBuilder()
@@ -36,7 +37,7 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
 
     public async execute(interaction: ChatInputCommandInteraction, client: DiscordClient): Promise<void> {
         const raceId = interaction.options.getString("race", true);
-        const race = client.services.race.races.find(race => race._id.toString() == raceId);
+        let race = await client.services.data.races.findOne({ _id: ObjectId.createFromHexString(raceId) });
 
         if (!race) {
             await interaction.reply({
@@ -307,7 +308,7 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
 
         switch (focusedValue.name) {
             case "race":
-                await interaction.respond(client.services.race.races.filter(race => {
+                await interaction.respond((await client.services.race.getRaces()).filter(race => {
                     return ![RaceStatus.SignupOpen, RaceStatus.SignupClosed, RaceStatus.Ended].includes(race.status);
                 }).map(race => {
                     return {name: truncate(race.name, 99, true), value: race._id.toString()}

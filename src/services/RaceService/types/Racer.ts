@@ -37,6 +37,9 @@ export default class Racer {
     }
 
     static fromDB(data: Racer) {
+        if (data === null) return null;
+        if (data === undefined) return undefined;
+
         let result = new this(data.memberId, data.characterName);
 
         result.scores = data.scores;

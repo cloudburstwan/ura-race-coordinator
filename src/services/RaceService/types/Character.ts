@@ -41,6 +41,9 @@ export default class Character {
     }
 
     static fromDB(data: Character) {
+        if (data === null) return null;
+        if (data === undefined) return undefined;
+
         let result = new this(data.name, data.memberId, data.type);
 
         result.aptitudes = data.aptitudes;
