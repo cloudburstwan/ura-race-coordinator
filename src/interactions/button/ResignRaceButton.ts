@@ -17,7 +17,7 @@ export default class RaceResignButton extends ButtonPressInteraction {
 
     async execute(interaction: ButtonInteraction, data: string[], client: DiscordClient): Promise<void> {
         try {
-            await client.services.race.removeRacer(data[0], interaction.member as GuildMember);
+            await client.services.race.removeRacer(data[0], interaction.user.id);
             await interaction.reply({
                 content: "Successfully resigned from the race.\nIf you wish to rejoin, just press the Join Race button again!",
                 flags: MessageFlagsBitField.Flags.Ephemeral
