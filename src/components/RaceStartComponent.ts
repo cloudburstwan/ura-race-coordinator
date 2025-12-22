@@ -63,8 +63,14 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
             new TextDisplayBuilder().setContent(`## ${emojifyRaceName(race.name, client)}\nIt's time for the race to begin. We will be racing on **${race.surface == SurfaceType.Turf ? "Turf" : "Dirt"}** (condition: **${condition}**) for a distance of **${race.distanceMetres} meters (${distanceName})**. It is **${weather}**.\n\n### Our contestants today are...`),
         );
 
+    if (race.flag == "URARA_MEMORIAM")
+        component.setAccentColor(16745656);
+
     if (race.flag == "LEGEND_RACE")
         component.setAccentColor(16750592);
+
+    if (race.flag == "SPECIAL")
+        component.setAccentColor(16726072);
 
     let mentions: string[] = [];
 

@@ -91,6 +91,9 @@ export default function createRaceSignupComponent(race: Race, client: DiscordCli
     if (race.flag == "LEGEND_RACE")
         component.setAccentColor(16750592);
 
+    if (race.flag == "SPECIAL")
+        component.setAccentColor(16726072);
+
     if (race.racers.length == 0) {
         component.addTextDisplayComponents(
             new TextDisplayBuilder().setContent("No racers have signed up yet.")
