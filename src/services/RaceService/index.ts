@@ -30,7 +30,7 @@ export default class RaceService {
         this.loadRaceData()
     }
 
-    private async updateRaceMessage(race: Race, client: DiscordClient, newRace: boolean = false, useGate: boolean = false): Promise<{ channel: Snowflake, message: Snowflake } | void> {
+    public async updateRaceMessage(race: Race, client: DiscordClient, newRace: boolean = false, useGate: boolean = false): Promise<{ channel: Snowflake, message: Snowflake } | void> {
         let component = createRaceSignupComponent(race, client, useGate);
 
         let channel: TextChannel | PublicThreadChannel;
