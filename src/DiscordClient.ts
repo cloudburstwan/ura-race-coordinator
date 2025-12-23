@@ -3,7 +3,7 @@
     AutocompleteInteraction,
     ButtonInteraction,
     ChatInputCommandInteraction,
-    Client,
+    Client, ClientEvents,
     Guild,
     Interaction,
     Message, ModalSubmitInteraction,
@@ -30,6 +30,7 @@ export default class DiscordClient extends Client {
         button: new Map(),
         modal: new Map()
     };
+    private eventSubscriptions: Map<string, EventSubscription<keyof ClientEvents>> = new Map();
 
     private appEmojis: Map<string, ApplicationEmoji> = new Map();
 
@@ -220,6 +221,26 @@ export default class DiscordClient extends Client {
         }
     }
 
+    public registerEventSubscription<T extends keyof ClientEvents>(subscriptioName: string, eventName: keyof ClientEvents, callback: (...args: ClientEvents[T]) => void) {
+        console.log(`Registered a ${eventName} listener for a subscription named ${subscriptioName}.`);
+
+        this.eventSubscriptions.set(subscriptioName, {
+            callback,
+            event: eventName,
+        });
+
+        this.on(eventName, callback);
+    }
+
+    public unregisterEventSubscription(subscriptionName: string) {
+        console.log(`Unregistered a subscription named ${subscriptionName}`);
+        let subscription = this.eventSubscriptions.get(subscriptionName);
+
+        this.removeListener(subscription.event, subscription.callback);
+
+        this.eventSubscriptions.delete(subscriptionName);
+    }
+
     public getEmojiString(name: string) {
         let emojis: ApplicationEmoji[] = []
 
@@ -248,6 +269,13 @@ interface Interactions {
     modal: Map<string, ModalInteraction>
 }
 
+interface EventSubscription<T extends keyof ClientEvents> {
+    callback: (...args: ClientEvents[T]) => void,
+    event: keyof ClientEvents
+}
+
+export type Experiment = "RACER_ATTENDANCE_CHECKER";
+
 interface Config {
     channels: {
         announce: Snowflake,
@@ -267,5 +295,6 @@ interface Config {
             // [User ID]/[Character Name]: position number or "L" (last)
             [key: `${Snowflake}/${string}`]: number | "L"
         }
-    }
+    },
+    experiments: Experiment[],
 }

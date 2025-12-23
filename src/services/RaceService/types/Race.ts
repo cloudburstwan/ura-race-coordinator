@@ -1,16 +1,27 @@
-import {ChannelResolvable, GuildMember, Snowflake, TextChannel} from "discord.js";
-import Racer from "./Racer";
+import {
+    ChannelResolvable,
+    GuildMember, Message,
+    MessageFlagsBitField,
+    PublicThreadChannel,
+    Snowflake,
+    TextChannel
+} from "discord.js";
+import Racer, {RacerMood, RacerStatus} from "./Racer";
 import DiscordClient from "../../../DiscordClient";
 import {DisqualificationType} from "./Disqualification";
-import {ObjectId} from "mongodb";
+import {EnhancedOmit, InferIdType, ObjectId} from "mongodb";
 import {rollXTimes} from "../../../utils";
+import {RaceError} from "../index";
+import createRaceSignupComponent from "../../../components/RaceSignupComponent";
+import createRaceStartComponent from "../../../components/RaceStartComponent";
 
 export default class Race {
     public name: string;
     public type: RaceType;
     public status: RaceStatus = RaceStatus.SignupOpen;
     public channelId: Snowflake;
-    public messageId: Snowflake;
+    public messageId: Snowflake; // DEPRECATED: Now tracking multiple messages, use messageReferences
+    public messageReferences: MessageReference;
     public startingAt: Date;
     public startingTimestamp: number;
     public surface: SurfaceType;
@@ -29,6 +40,10 @@ export default class Race {
         this.name = name;
         this.type = type;
         this.channelId = channelId;
+        this.messageReferences = {
+            signup: null,
+            start: null
+        };
         this.startingAt = startingAt;
         this.startingTimestamp = startingAt.getTime();
         this.surface = surface;
@@ -47,13 +62,151 @@ export default class Race {
         this.flag = flag;
     }
 
+    private async getSignupChannel(client: DiscordClient) {
+        let channel: TextChannel | PublicThreadChannel;
+        if (this.type == RaceType.NonGraded)
+            channel = await client.guild.channels.fetch(client.config.channels.daily_announce) as TextChannel;
+        else if (this.type == RaceType.GradedDomestic)
+            channel = await client.guild.channels.fetch(client.config.channels.jp_announce) as TextChannel;
+        else if (this.type == RaceType.GradedInternational)
+            channel = await client.guild.channels.fetch(client.config.channels.overseas_announce) as TextChannel;
+        else
+            channel = await client.guild.channels.fetch(client.config.channels.announce) as TextChannel;
+
+        if (this.flag == "WEDDING_BOUQUET_THROW")
+            channel = await client.guild.channels.fetch(client.config.channels.events.wedding_guest_chat) as TextChannel;
+        if (this.flag == "LEGEND_RACE")
+            channel = await client.guild.channels.fetch(client.config.channels.legend_announce) as TextChannel;
+
+        return channel;
+    }
+
+    public async updateRaceSignupMessage(client: DiscordClient, newRace: boolean = false, useGate: boolean = false) {
+        let component = createRaceSignupComponent(this, client, useGate);
+
+        const channel = await this.getSignupChannel(client);
+
+        if (newRace) {
+            let message = await channel.send({
+                components: [ component ],
+                flags: MessageFlagsBitField.Flags.IsComponentsV2
+            });
+
+            this.messageReferences.signup = message.id;
+
+            await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
+
+            return {
+                channel: message.channelId
+            }
+        } else {
+            let message = await channel.messages.fetch(this.messageReferences.signup);
+
+            await message.edit({
+                components: [ component ],
+                flags: MessageFlagsBitField.Flags.IsComponentsV2
+            });
+        }
+    }
+
+    public async updateRaceStartMessage(client: DiscordClient, createMessage: boolean = false) {
+        const channel = await client.guild.channels.fetch(this.channelId) as TextChannel;
+        const component = createRaceStartComponent(this, client);
+
+        if (createMessage) {
+            let message = await channel.send({
+                components: [ component.component ],
+                flags: MessageFlagsBitField.Flags.IsComponentsV2
+            });
+            await message.reply({
+                content: `${component.mentions.join(" ")}`
+            });
+
+            this.messageReferences.start = message.id;
+
+            await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
+        } else {
+            let message = await channel.messages.fetch(this.messageReferences.start);
+
+            await message.edit({
+                components: [ component.component ],
+                flags: MessageFlagsBitField.Flags.IsComponentsV2
+            });
+        }
+    }
+
+    public async destroy(client: DiscordClient) {
+        const signupChannel = await this.getSignupChannel(client);
+        const signupMessage = await signupChannel.messages.fetch(this.messageReferences.signup);
+        await signupMessage.delete();
+
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status)) {
+            const startChannel = await client.channels.fetch(this.channelId) as TextChannel;
+            const startMessage = await startChannel.messages.fetch(this.messageReferences.start);
+            await startMessage.delete();
+        }
+
+        await client.services.data.races.deleteOne({ _id: this._id });
+    }
+
+    public async startRace(client: DiscordClient) {
+        // TODO: Migrate race start code from RaceService.
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status))
+            throw new RaceError("RACE_ALREADY_STARTED", "Cannot start a race that has already started");
+
+        this.status = RaceStatus.Started;
+
+        // Assign moods
+        this.racers.map((racer, index) => {
+            racer.gate = index + 1;
+
+            if (["URARA_MEMORIAM", "WEDDING_BOUQUET_THROW"].includes(this.flag))
+                racer.assignMood(RacerMood.Great);
+            else if (this.flag == "LEGEND_RACE" && racer.memberId == client.config.users.legend_racer)
+                racer.assignMood(RacerMood.Great);
+            else
+                racer.assignMood();
+        });
+
+        // Assign favorites
+        await this.getFavorites(client);
+
+        await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
+
+        await this.updateRaceSignupMessage(client, false, true);
+
+        await this.updateRaceStartMessage(client, true);
+
+        if (client.config.experiments.includes("RACER_ATTENDANCE_CHECKER")) {
+            client.registerEventSubscription<"messageCreate">(`attendance-check-start-${this._id.toString("hex")}`, `messageCreate`, async (msg: Message) => {
+                if (msg.channelId != this.channelId) return;
+                if (msg.author.bot) return;
+                let potentialRacerIndex = this.racers.findIndex(racer => racer.memberId == msg.author.id);
+
+                if (potentialRacerIndex != -1) {
+                    if (this.racers[potentialRacerIndex].status == RacerStatus.Normal) return;
+
+                    this.racers[potentialRacerIndex].status = RacerStatus.Normal;
+                    await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
+                    await this.updateRaceStartMessage(client);
+                }
+            });
+        }
+
+        return this;
+    }
+
     addRacer(member: GuildMember, characterName: string) {
         if (this.flag == "URARA_MEMORIAM" && characterName != "Haru Urara")
             throw new RangeError(`This race is a memoriam for Haru Urara. Only Haru Urara is allowed to race. Try racing as Haru Urara!\n-# Even if you think you can't do it, just keep on pushing ahead. She would have wanted you to try your best no matter what.`);
 
         let racer = new Racer(member.id, characterName);
-        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status))
-            racer.gate = Math.max(...this.racers.map(racer => racer.gate))+1;
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status)) {
+            racer.gate = Math.max(...this.racers.map(racer => racer.gate), 0) + 1;
+            racer.favoritePosition = Math.max(...this.racers.map(racer => racer.favoritePosition), 1);
+            racer.status = RacerStatus.Normal; // Assumed present if added after race start.
+            racer.assignMood();
+        }
 
         this.racers.push(racer);
     }
@@ -62,6 +215,60 @@ export default class Race {
         let index = this.racers.findIndex(race => race.memberId == memberId);
 
         this.racers.splice(index, 1);
+    }
+
+    public async getFavorites(client: DiscordClient) {
+        let takenFavoritePositions = [];
+
+        // Populate with legend racer favorite override
+        if (this.flag == "LEGEND_RACE") {
+            takenFavoritePositions.push(1);
+        }
+
+        // Populate with existing overridden favorite positions
+        for (let identifier in client.config.overrides.favorite) {
+            let position = 0;
+            switch (client.config.overrides.favorite[identifier]) {
+                case "L": // Always last place
+                    position = this.racers.length;
+                    break;
+                default:
+                    position = client.config.overrides.favorite[identifier];
+            }
+
+            takenFavoritePositions.push(position);
+        }
+
+        let racersWithFavorites = this.racers
+            .map(racer => {
+                let possibleFavoritePositions = [];
+
+                for (let i = 0; i < this.racers.length; i++) {
+                    if (!takenFavoritePositions.includes(i+1))
+                        possibleFavoritePositions.push(i+1);
+                }
+
+                let favorite = possibleFavoritePositions[Math.floor(Math.random() * possibleFavoritePositions.length)];
+
+                if (this.flag == "LEGEND_RACE" && racer.memberId == client.config.users.legend_racer) {
+                    favorite = 1;
+                }
+
+                if (Object.keys(client.config.overrides.favorite).includes(`${racer.memberId}/${racer.characterName}`) && this.flag != "LEGEND_RACE") {
+                    favorite = client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`] == "L" ?
+                        this.racers.length :
+                        client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`];
+                }
+
+                takenFavoritePositions.push(favorite);
+
+                return Object.assign({ favoritePosition: favorite }, racer);
+            })
+            .sort((racer1, racer2) => racer1.favoritePosition < racer2.favoritePosition ? -1 : 1);
+
+        for (let index in this.racers) {
+            this.racers[index].favoritePosition = racersWithFavorites.findIndex(racer => racer.memberId == this.racers[index].memberId && racer.characterName == this.racers[index].characterName)
+        }
     }
 
     getResults() {
@@ -79,9 +286,9 @@ export default class Race {
 
                 racer.overallScore = 0;
 
-                if (this.flag != "URARA_MEMORIAM") {
-                    // TODO: Actually write this code
-                }
+                if (this.flag == "URARA_MEMORIAM") return;
+
+                // TODO: Actually write this code
             });
 
             this.racers.sort(() => Math.floor(Math.random() * 2) == 1 ? -1 : 1); // Tiebreak
@@ -112,14 +319,24 @@ export default class Race {
         }
     }
 
-    public static fromDB(data: Race) {
+    public static fromDB(data: EnhancedOmit<Race, "_id"> & { _id: InferIdType<Race> }) {
         if (data === null) return null;
         if (data === undefined) return undefined;
 
         let result = new this(data.name, data.type, data.channelId, data.startingAt, data.surface, data.distance, data.weather, data.trackCondition, data.maxRacers, data.flag);
 
         result.status = data.status;
-        result.messageId = data.messageId;
+
+        // MIGRATION: data.messageId => result.messageReferences.signup
+        // TRIGGERS: If data.messageReferences is undefined (non-existent)
+        if (data.messageReferences == undefined) {
+            result.messageReferences = {
+                signup: data.messageId,
+                start: null
+            };
+        } else {
+            result.messageReferences = data.messageReferences;
+        }
         result.distanceMetres = data.distanceMetres;
         result.distance = data.distance;
         result._id = data._id;
@@ -151,6 +368,10 @@ export interface Placement {
     marginNumber: number
 }
 
+interface MessageReference {
+    signup: Snowflake,
+    start: Snowflake
+}
 
 export enum MarginType {
     None,

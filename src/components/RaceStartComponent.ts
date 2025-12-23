@@ -1,14 +1,16 @@
 ﻿import Race, {DistanceType, SurfaceType, TrackConditionType, WeatherType} from "../services/RaceService/types/Race";
 import {
-    ActionRowBuilder, ButtonBuilder, ButtonStyle,
-    ContainerBuilder, MessageActionRowComponentBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ContainerBuilder,
+    MessageActionRowComponentBuilder,
     SeparatorBuilder,
     SeparatorSpacingSize,
     TextDisplayBuilder
 } from "discord.js";
-import {RacerMood} from "../services/RaceService/types/Racer";
+import {RacerMood, RacerStatus} from "../services/RaceService/types/Racer";
 import DiscordClient from "../DiscordClient";
-import {randomInt} from "node:crypto";
 import {emojifyRaceName, numberSuffix} from "../utils";
 
 export default function createRaceStartComponent(race: Race, client: DiscordClient) {
@@ -74,54 +76,6 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
 
     let mentions: string[] = [];
 
-    let takenFavoritePositions = [];
-
-    // Populate with legend racer favorite override
-    if (race.flag == "LEGEND_RACE") {
-        takenFavoritePositions.push(1);
-    }
-
-    // Populate with existing overridden favorite positions
-    for (let identifier in client.config.overrides.favorite) {
-        let position = 0;
-        switch (client.config.overrides.favorite[identifier]) {
-            case "L": // Always last place
-                position = race.racers.length;
-                break;
-            default:
-                position = client.config.overrides.favorite[identifier];
-        }
-
-        takenFavoritePositions.push(position);
-    }
-
-    let racersWithFavorites = race.racers
-        .map(racer => {
-            let possibleFavoritePositions = [];
-
-            for (let i = 0; i < race.racers.length; i++) {
-                if (!takenFavoritePositions.includes(i+1))
-                    possibleFavoritePositions.push(i+1);
-            }
-
-            let favorite = possibleFavoritePositions[Math.floor(Math.random() * possibleFavoritePositions.length)];
-
-            if (race.flag == "LEGEND_RACE" && racer.memberId == client.config.users.legend_racer) {
-                favorite = 1;
-            }
-
-            if (Object.keys(client.config.overrides.favorite).includes(`${racer.memberId}/${racer.characterName}`) && race.flag != "LEGEND_RACE") {
-                favorite = client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`] == "L" ?
-                    race.racers.length :
-                    client.config.overrides.favorite[`${racer.memberId}/${racer.characterName}`];
-            }
-
-            takenFavoritePositions.push(favorite);
-
-            return Object.assign({ favoritePosition: favorite }, racer);
-        })
-        .sort((racer1, racer2) => racer1.favoritePosition < racer2.favoritePosition ? -1 : 1);
-
     for (let index in race.racers) {
         let moodEmojiCombo: string;
         switch (race.racers[index].mood) {
@@ -142,10 +96,13 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
                 break;
         }
 
-        let favouritePosition = racersWithFavorites.findIndex(racer => racer.memberId == race.racers[index].memberId && racer.characterName == race.racers[index].characterName)
+        let attendanceCheckerStr: string = "";
+        if (client.config.experiments.includes("RACER_ATTENDANCE_CHECKER")) {
+            attendanceCheckerStr = `${race.racers[index].status == RacerStatus.Normal ? client.getEmojiString("racer_status_present") : client.getEmojiString("racer_status_absent")} `;
+        }
 
         component.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`[#${race.racers[index].gate}] **${race.racers[index].characterName}** ${moodEmojiCombo} [${favouritePosition < 3 ? "**" : ""}${favouritePosition+1}${numberSuffix(favouritePosition+1)} favorite${favouritePosition < 3 ? "**" : ""}]`),
+            new TextDisplayBuilder().setContent(`${attendanceCheckerStr}[#${race.racers[index].gate}] **${race.racers[index].characterName}** ${moodEmojiCombo} [${race.racers[index].favoritePosition < 3 ? "**" : ""}${race.racers[index].favoritePosition+1}${numberSuffix(race.racers[index].favoritePosition+1)} favorite${race.racers[index].favoritePosition < 3 ? "**" : ""}]`),
         );
 
         mentions.push(`<@${race.racers[index].memberId}>`);
@@ -154,20 +111,28 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
     component
         .addSeparatorComponents(
             new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
-        )
-        .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent("Press the button below to verify that you are present!\n\n**Development Note:** The button does nothing right now, but it's here to get you familiar with it."),
-        )
-        .addActionRowComponents(
-            new ActionRowBuilder<MessageActionRowComponentBuilder>()
-                .addComponents(
-                    new ButtonBuilder()
-                        .setStyle(ButtonStyle.Success)
-                        .setLabel("Confirm Attendance for Race")
-                        .setDisabled(true)
-                        .setCustomId("race-confirm-attendance"),
-                ),
         );
+
+    if (client.config.experiments.includes("RACER_ATTENDANCE_CHECKER")) {
+        component.addTextDisplayComponents(
+            new TextDisplayBuilder().setContent("Your attendance will be marked automatically when you send your first message in this channel.")
+        )
+    } else {
+        component
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent("Press the button below to verify that you are present!\n\n**Development Note:** The button does nothing right now, but it's here to get you familiar with it."),
+            )
+            .addActionRowComponents(
+                new ActionRowBuilder<MessageActionRowComponentBuilder>()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setStyle(ButtonStyle.Success)
+                            .setLabel("Confirm Attendance for Race")
+                            .setDisabled(true)
+                            .setCustomId("race-confirm-attendance"),
+                    ),
+            );
+    }
 
     return { component, mentions };
 }

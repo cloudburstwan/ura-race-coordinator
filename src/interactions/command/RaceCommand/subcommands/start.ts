@@ -39,34 +39,22 @@ export default class RaceStartSubcommand extends SubcommandInteraction {
     public async execute(interaction: ChatInputCommandInteraction, client: DiscordClient): Promise<void> {
         // Starts a race.
         const raceId = interaction.options.getString("race", true);
+        await interaction.deferReply();
         try {
             const race = await client.services.race.startRace(raceId, client);
 
             if (!race) {
-                await interaction.reply({
-                    content: "No race by that name exists!",
-                    flags: MessageFlagsBitField.Flags.Ephemeral
+                await interaction.editReply({
+                    content: "No race by that name exists!"
                 });
                 return;
             }
 
-            const channel = await client.guild.channels.fetch(race.channelId) as TextChannel | PublicThreadChannel;
-
-            const component = createRaceStartComponent(race, client);
-
-            let raceAnnounce = await channel.send({
-                components: [ component.component ],
-                flags: MessageFlagsBitField.Flags.IsComponentsV2
-            });
-
-            await raceAnnounce.reply({
-                content: `${component.mentions.join(" ")}`
-            });
-
-            await interaction.reply(`Started the race in <#${race.channelId}>`);
+            await interaction.editReply(`Started the race in <#${race.channelId}>`);
         } catch (e) {
             console.error("your fault for speedcoding this grass");
             console.error(e);
+            await interaction.editReply(`Something went wrong when trying to start the race. Please promptly yell at Grass Wonder.`);
         }
     }
 
