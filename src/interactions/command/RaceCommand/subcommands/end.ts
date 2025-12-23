@@ -37,7 +37,7 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
 
     public async execute(interaction: ChatInputCommandInteraction, client: DiscordClient): Promise<void> {
         const raceId = interaction.options.getString("race", true);
-        let race = await client.services.data.races.findOne({ _id: ObjectId.createFromHexString(raceId) });
+        let race = Race.fromDB(await client.services.data.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
 
         if (!race) {
             await interaction.reply({
