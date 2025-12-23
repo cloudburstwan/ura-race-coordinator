@@ -26,58 +26,15 @@ export default class RaceService {
         this.Client = client;
     }
 
-    public async updateRaceMessage(race: Race, client: DiscordClient, newRace: boolean = false, useGate: boolean = false): Promise<{ channel: Snowflake, message: Snowflake } | void> {
-        let component = createRaceSignupComponent(race, client, useGate);
-
-        let channel: TextChannel | PublicThreadChannel;
-        if (race.type == RaceType.NonGraded) {
-            channel = await client.guild.channels.fetch(client.config.channels.daily_announce) as TextChannel;
-        } else if (race.type == RaceType.GradedDomestic) {
-            channel = await client.guild.channels.fetch(client.config.channels.jp_announce) as TextChannel;
-        } else if (race.type == RaceType.GradedInternational) {
-            channel = await client.guild.channels.fetch(client.config.channels.overseas_announce) as TextChannel;
-        } else {
-            channel = await client.guild.channels.fetch(client.config.channels.announce) as TextChannel;
-        }
-
-        if (race.flag == "WEDDING_BOUQUET_THROW")
-            channel = await client.guild.channels.fetch(client.config.channels.events.wedding_guest_chat) as PublicThreadChannel;
-
-        if (race.flag == "LEGEND_RACE")
-            channel = await client.guild.channels.fetch(client.config.channels.legend_announce) as TextChannel;
-
-        if (newRace) {
-            let message = await channel.send({
-                components: [ component ],
-                flags: MessageFlagsBitField.Flags.IsComponentsV2
-            });
-
-            return {
-                channel: message.channelId,
-                message: message.id
-            };
-        } else {
-            let message = await channel.messages.fetch(race.messageId);
-
-            await message.edit({
-                components: [component],
-                flags: MessageFlagsBitField.Flags.IsComponentsV2
-            });
-        }
-    }
-
     public async createRace(race: Race, client: DiscordClient) {
         let result = await this.DataService.races.insertOne(race);
-        let msg = await this.updateRaceMessage(race, client, true) as {channel: Snowflake, message: Snowflake};
+        let msg = await race.updateRaceSignupMessage(client, true) as {channel: Snowflake, message: Snowflake};
 
-        race.messageId = msg.message;
-
-        await this.DataService.races.updateOne({ _id: result.insertedId }, { $set: race });
         return msg.channel;
     }
 
     public async addRacer(raceId: string, member: GuildMember, characterName: string, force: boolean = false) {
-        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(characterName) }));
+        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
         const linkRegex = /(.+):\/\/(.+)/g;
 
         if (!race)
@@ -106,7 +63,9 @@ export default class RaceService {
 
             await this.DataService.races.updateOne({ _id: race._id }, { $set: race });
 
-            await this.updateRaceMessage(race, this.Client);
+            await race.updateRaceSignupMessage(this.Client);
+            if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status))
+                await race.updateRaceStartMessage(this.Client);
         } catch (e) {
             // Only catch RangeError, since that's thrown by race.addRacer if the name is not allowed (e.g. for special race types)
             // If it's not a RangeError, something else went wrong and it's not our problem, throw it back!
@@ -119,7 +78,7 @@ export default class RaceService {
     }
 
     public async removeRacer(raceId: string, memberId: Snowflake, force: boolean = false) {
-        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
+        let race = Race.fromDB(await this.DataService.races.findOne({_id: ObjectId.createFromHexString(raceId)}));
 
         if (!race)
             throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
@@ -134,42 +93,23 @@ export default class RaceService {
 
         await this.DataService.races.updateOne({ _id: race._id }, { $set: race });
 
-        await this.updateRaceMessage(race, this.Client);
+        await race.updateRaceSignupMessage(this.Client);
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status))
+            await race.updateRaceStartMessage(this.Client);
     }
 
     public async startRace(raceId: string, client: DiscordClient) {
         // Starts a race.
-        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
+        let race = Race.fromDB(await this.DataService.races.findOne({_id: ObjectId.createFromHexString(raceId)}));
 
         if (!race)
             throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
 
-        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status))
-            throw new RaceError("RACE_ALREADY_STARTED", "Cannot start a race that has already started");
-
-        race.status = RaceStatus.Started;
-
-        race.racers.forEach((racer, index) => {
-            racer.gate = index+1;
-
-            if (["URARA_MEMORIAM", "WEDDING_BOUQUET_THROW"].includes(race.flag)) {
-                racer.assignMood(RacerMood.Great);
-            } else if (race.flag == "LEGEND_RACE" && racer.memberId == client.config.users.legend_racer) {
-                racer.assignMood(RacerMood.Great);
-            } else {
-                racer.assignMood();
-            }
-        });
-
-        await this.DataService.races.updateOne({ _id: race._id }, { $set: race });
-
-        await this.updateRaceMessage(race, client, false, true);
-
-        return race;
+        return await race.startRace(client);
     }
 
     public async getResults(raceId: string) {
-        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
+        let race = Race.fromDB(await this.DataService.races.findOne({_id: ObjectId.createFromHexString(raceId)}));
 
         if (!race)
             throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
@@ -181,7 +121,7 @@ export default class RaceService {
     }
 
     public async endRace(raceId: string, client: DiscordClient) {
-        let race = Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
+        let race = Race.fromDB(await this.DataService.races.findOne({_id: ObjectId.createFromHexString(raceId)}));
 
         if (!race)
             throw new RaceError("RACE_NOT_FOUND", "The race ID provided does not link to a valid race");
@@ -193,7 +133,7 @@ export default class RaceService {
 
         await this.DataService.races.updateOne({ _id: race._id }, { $set: race });
 
-        await this.updateRaceMessage(race, client);
+        await race.updateRaceSignupMessage(client);
     }
 
     public async getRaces() {

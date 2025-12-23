@@ -6,6 +6,7 @@ import {randomInt} from "../../../utils";
 export default class Racer {
     public memberId: Snowflake;
     public gate: number = 0;
+    public favoritePosition: number = 0;
     public characterId: string = null;
     public characterName: string;
     public status: RacerStatus = RacerStatus.NotPresent;
@@ -42,9 +43,11 @@ export default class Racer {
 
         let result = new this(data.memberId, data.characterName);
 
+        result.status = data.status;
         result.scores = data.scores;
         result.mood = data.mood;
         result.gate = data.gate;
+        result.favoritePosition = data.favoritePosition;
         result.overallScore = data.overallScore;
         result.skillRolls = data.skillRolls;
         result.debuffCount = data.debuffCount;
@@ -56,9 +59,8 @@ export default class Racer {
 export enum RacerStatus {
     NotPresent,
     Normal,
-    Injured,
-    Disqualified,
-    DNFOther
+    DNF_IC,
+    DNF_OOC,
 }
 
 export enum RacerMood {
