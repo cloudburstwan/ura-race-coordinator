@@ -9,9 +9,18 @@ export default class JoinRaceModal extends ModalInteraction {
     async execute(interaction: ModalSubmitInteraction, data: string[], client: DiscordClient): Promise<void> {
         let raceId = data[0];
         let name = interaction.fields.getField("name").value;
+        let race = await client.services.race.get(raceId);
+
+        if (!race) {
+            await interaction.reply({
+                content: "Whoops! It seems like that race does not exist. Maybe it got destroyed?",
+                flags: MessageFlagsBitField.Flags.Ephemeral
+            });
+            return;
+        }
 
         try {
-            await client.services.race.addRacer(raceId, interaction.member as GuildMember, name);
+            await race.addRacer(interaction.user.id, name, client);
             await interaction.reply({
                 content: "You've successfully joined the race! Congratulations!\nIf at any time you decide you cannot or do not want to participate, please press the Resign button!",
                 flags: MessageFlagsBitField.Flags.Ephemeral
@@ -19,21 +28,15 @@ export default class JoinRaceModal extends ModalInteraction {
         } catch (e) {
             if (e instanceof RaceError) {
                 switch (e.code) {
-                    case "RACE_NOT_FOUND":
-                        await interaction.reply({
-                            content: "Whoops! It seems like that race does not exist. Maybe it's already finished?",
-                            flags: MessageFlagsBitField.Flags.Ephemeral
-                        });
-                        break;
                     case "RACE_SIGNUP_CLOSED_OR_FULL":
                         await interaction.reply({
                             content: "Sorry, but signups for this race are either closed or all available slots are already filled.",
                             flags: MessageFlagsBitField.Flags.Ephemeral
                         });
                         break;
-                    case "CHARACTER_ALREADY_JOINED":
+                    case "USER_ALREADY_JOINED":
                         await interaction.reply({
-                            content: "It seems like you already signed up for this race with this character!",
+                            content: "It seems like you already signed up for this racer!",
                             flags: MessageFlagsBitField.Flags.Ephemeral
                         });
                         break;

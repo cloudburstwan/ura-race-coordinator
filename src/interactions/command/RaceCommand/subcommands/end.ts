@@ -47,8 +47,8 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
             return;
         }
 
-        let results = await client.services.race.getResults(raceId);
-        await client.services.race.endRace(raceId, client);
+        let results = await race.getResults();
+        await race.end(client);
 
         function generateComponent(locked: boolean) {
             const component = new ContainerBuilder()
@@ -166,10 +166,10 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
                         // TODO: Publish the scoreboard
                         console.log("publish!");
                         await sendResultsToPublic(buttonPress, race, results, client);
-                        await client.services.race.endRace(raceId, client);
+                        await race.end(client);
                     }
                     if (buttonName == "race-end-reroll") {
-                        results = await client.services.race.getResults(raceId);
+                        results = await race.getResults();
                         let component = generateComponent(false);
                         await message.edit({
                             components: [component],
@@ -308,7 +308,7 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
 
         switch (focusedValue.name) {
             case "race":
-                await interaction.respond((await client.services.race.getRaces()).filter(race => {
+                await interaction.respond((await client.services.race.list()).filter(race => {
                     return ![RaceStatus.SignupOpen, RaceStatus.SignupClosed, RaceStatus.Ended].includes(race.status);
                 }).map(race => {
                     return {name: truncate(race.name, 99, true), value: race._id.toString()}

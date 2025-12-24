@@ -8,8 +8,8 @@ import {
 } from "discord.js";
 import Racer, {RacerMood, RacerStatus} from "./Racer";
 import DiscordClient from "../../../DiscordClient";
-import {DisqualificationType} from "./Disqualification";
-import {EnhancedOmit, InferIdType, ObjectId} from "mongodb";
+import Disqualification, {DisqualificationType} from "./Disqualification";
+import {EnhancedOmit, Filter, InferIdType, ObjectId} from "mongodb";
 import {rollXTimes} from "../../../utils";
 import {RaceError} from "../index";
 import createRaceSignupComponent from "../../../components/RaceSignupComponent";
@@ -102,6 +102,11 @@ export default class Race {
         } else {
             let message = await channel.messages.fetch(this.messageReferences.signup);
 
+            if (message == undefined || message.edit == undefined) {
+                console.warn(`Tried to find message id ${this.messageReferences.signup} in channel id ${channel.id} but could not find it, or could not edit.`);
+                return;
+            }
+
             await message.edit({
                 components: [ component ],
                 flags: MessageFlagsBitField.Flags.IsComponentsV2
@@ -128,6 +133,11 @@ export default class Race {
         } else {
             let message = await channel.messages.fetch(this.messageReferences.start);
 
+            if (message == undefined) {
+                console.warn(`Tried to find message id ${this.messageReferences.signup} in channel id ${channel.id}.`);
+                return;
+            }
+
             await message.edit({
                 components: [ component.component ],
                 flags: MessageFlagsBitField.Flags.IsComponentsV2
@@ -150,21 +160,17 @@ export default class Race {
     }
 
     public async cancel(client: DiscordClient) {
-        const signupChannel = await this.getSignupChannel(client);
-        const signupMessage = await signupChannel.messages.fetch(this.messageReferences.signup);
-        const signupComponent = createRaceSignupComponent(this, client, ![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status));
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status))
+            throw new RaceError("RACE_IN_PROGRESS_OR_OVER", "Cannot cancel a race that is in progress or already over");
 
-        await signupMessage.edit({
-            components: [ signupComponent ],
-            flags: MessageFlagsBitField.Flags.IsComponentsV2
-        });
+        await this.updateRaceSignupMessage(client, false, false);
 
         this.status = RaceStatus.Cancelled;
 
         await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
     }
 
-    public async startRace(client: DiscordClient) {
+    public async start(client: DiscordClient) {
         // TODO: Migrate race start code from RaceService.
         if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status))
             throw new RaceError("RACE_ALREADY_STARTED", "Cannot start a race that has already started");
@@ -211,25 +217,89 @@ export default class Race {
         return this;
     }
 
-    addRacer(member: GuildMember, characterName: string) {
-        if (this.flag == "URARA_MEMORIAM" && characterName != "Haru Urara")
-            throw new RangeError(`This race is a memoriam for Haru Urara. Only Haru Urara is allowed to race. Try racing as Haru Urara!\n-# Even if you think you can't do it, just keep on pushing ahead. She would have wanted you to try your best no matter what.`);
+    async end(client: DiscordClient) {
+        if ([RaceStatus.SignupOpen, RaceStatus.SignupClosed, RaceStatus.Cancelled, RaceStatus.Ended].includes(this.status))
+            throw new RaceError("RACE_NOT_YET_STARTED_OR_OVER", "Cannot end a race that has not yet started or is already over");
 
-        let racer = new Racer(member.id, characterName);
+        this.status = RaceStatus.Ended;
+
+        await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
+
+        await this.updateRaceSignupMessage(client, false, true);
+        await this.updateRaceStartMessage(client);
+    }
+
+    async addRacer(memberId: Snowflake, characterName: string, client: DiscordClient, force: boolean = false) {
+        const linkRegex = /(.+):\/\/(.+)/g;
+
+        if ((this.status != RaceStatus.SignupOpen || this.racers.length >= this.maxRacers) && !force)
+            throw new RaceError("RACE_SIGNUP_CLOSED_OR_FULL", "Signups are either closed or there are already too many racers");
+
+        if (this.racers.some(racer => racer.memberId == memberId) && !force)
+            throw new RaceError("USER_ALREADY_JOINED", "User has already signed up for this race");
+
+        if (linkRegex.test(characterName))
+            throw new RaceError("BAD_CHARACTER_NAME", "Sorry, your character cannot be a website.\n-# Please do not try to set your character name to a link.");
+
+        let disqualificationSearchQuery: Filter<Disqualification> = { memberId: memberId, endsAt: { $gte: new Date() } };
+
+        if (this.type != RaceType.NonGraded)
+            disqualificationSearchQuery.type = DisqualificationType.Graded;
+
+        if ((await client.services.data.disqualifications.find(disqualificationSearchQuery).toArray()).length > 0) {
+            throw new RaceError("USER_DISQUALIFIED", "User disqualified from this race and cannot join")
+        }
+
+        if (this.flag == "URARA_MEMORIAM" && characterName != "Haru Urara")
+            throw new RaceError("BAD_CHARACTER_NAME", `This race is a memoriam for Haru Urara. Only Haru Urara is allowed to race. Try racing as Haru Urara!\n-# Even if you think you can't do it, just keep on pushing ahead. She would have wanted you to try your best no matter what.`);
+
+        let racer = new Racer(memberId, characterName);
+        let gate: number;
+        let favoritePosition: number;
+        let mood: RacerMood;
         if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status)) {
-            racer.gate = Math.max(...this.racers.map(racer => racer.gate), 0) + 1;
-            racer.favoritePosition = Math.max(...this.racers.map(racer => racer.favoritePosition), 0) + 1;
+            gate = Math.max(...this.racers.map(racer => racer.gate), 0) + 1;
+            favoritePosition = Math.max(...this.racers.map(racer => racer.favoritePosition), 0) + 1;
             racer.status = RacerStatus.Normal; // Assumed present if added after race start.
-            racer.assignMood();
+            mood = racer.assignMood();
+
+            racer.gate = gate;
+            racer.favoritePosition = favoritePosition;
+            racer.mood = mood;
         }
 
         this.racers.push(racer);
+
+        await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
+
+        await this.updateRaceSignupMessage(client);
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed, RaceStatus.Cancelled].includes(this.status))
+            await this.updateRaceStartMessage(client);
+
+        return {
+            joinedLate: ![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status),
+            gate,
+            favoritePosition,
+            mood
+        }
     }
 
-    removeRacer(memberId: Snowflake) {
+    async removeRacer(memberId: Snowflake, client: DiscordClient, force: boolean = false) {
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status) && !force)
+            throw new RaceError("RACE_IN_PROGRESS_OR_OVER", "Cannot resign from a race that is in progress / over");
+
         let index = this.racers.findIndex(race => race.memberId == memberId);
 
+        if (index == -1)
+            throw new RaceError("USER_NOT_JOINED", "User has not joined this race");
+
         this.racers.splice(index, 1);
+
+        await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
+
+        await this.updateRaceSignupMessage(client);
+        if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed, RaceStatus.Cancelled].includes(this.status))
+            await this.updateRaceStartMessage(client);
     }
 
     public async getFavorites(client: DiscordClient) {

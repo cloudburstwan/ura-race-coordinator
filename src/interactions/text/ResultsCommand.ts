@@ -136,9 +136,9 @@ export default class ResultsCommand extends TextInteraction {
                 return;
             }
 
-            let race = (await client.services.race.getRaces()).find(race => race._id.toString() == raceId);
+            let race = await client.services.race.get(raceId);
 
-            if (race === undefined) {
+            if (race == null) {
                 await message.reply("Race ID seems to be invalid or not present. Aborting!");
                 return;
             }

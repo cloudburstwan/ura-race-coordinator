@@ -13,7 +13,7 @@ export default class ResultsCommand extends TextInteraction {
         let ids = regexMatch[1].split(" ");
 
         try {
-            let race = (await client.services.race.getRaces()).find(race => race._id.toString("hex") == ids[0]);
+            let race = await client.services.race.get(ids[0]);
 
             if (race == undefined) throw new ReferenceError("Race not found.");
 
