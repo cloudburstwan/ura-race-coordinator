@@ -141,5 +141,7 @@ export function emojifyRaceName(raceName: string, client: DiscordClient): string
  * @param useEllipse Whether to use ellipse at the end to imply that the string has been truncated (default: true)
  */
 export function truncate(string: string, maxLength: number, useEllipse: boolean = true) {
-    return `${string.split("").splice(0, useEllipse ? maxLength-3 : maxLength).join("")}${useEllipse ? "..." : ""}`;
+    let truncatedString = string.split("").splice(0, useEllipse ? maxLength-3 : maxLength).join("");
+    if (truncatedString.length == (useEllipse ? maxLength-3 : maxLength)) truncatedString += "...";
+    return `${truncatedString}`;
 }
