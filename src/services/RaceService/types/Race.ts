@@ -149,6 +149,21 @@ export default class Race {
         await client.services.data.races.deleteOne({ _id: this._id });
     }
 
+    public async cancel(client: DiscordClient) {
+        const signupChannel = await this.getSignupChannel(client);
+        const signupMessage = await signupChannel.messages.fetch(this.messageReferences.signup);
+        const signupComponent = createRaceSignupComponent(this, client, ![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status));
+
+        await signupMessage.edit({
+            components: [ signupComponent ],
+            flags: MessageFlagsBitField.Flags.IsComponentsV2
+        });
+
+        this.status = RaceStatus.Cancelled;
+
+        await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
+    }
+
     public async startRace(client: DiscordClient) {
         // TODO: Migrate race start code from RaceService.
         if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status))
@@ -367,6 +382,8 @@ export function raceStatusToString(status: RaceStatus): string {
             return "Race Ongoing";
         case RaceStatus.Ended:
             return "Race Concluded";
+        case RaceStatus.Cancelled:
+            return "Race Cancelled";
         default:
             return status;
     }
@@ -444,4 +461,5 @@ export enum RaceStatus {
     Late,
     FinalSpurt, // End of above!
     Ended,
+    Cancelled
 }
