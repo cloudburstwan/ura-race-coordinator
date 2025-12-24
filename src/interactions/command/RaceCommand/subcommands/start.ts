@@ -40,15 +40,16 @@ export default class RaceStartSubcommand extends SubcommandInteraction {
         // Starts a race.
         const raceId = interaction.options.getString("race", true);
         await interaction.deferReply();
-        try {
-            const race = await client.services.race.startRace(raceId, client);
 
-            if (!race) {
-                await interaction.editReply({
-                    content: "No race by that name exists!"
-                });
-                return;
-            }
+        const race = await client.services.race.get(raceId);
+
+        if (!race) {
+            await interaction.editReply(`Sorry, but the race selected does not exist.`);
+            return;
+        }
+
+        try {
+            await race.start(client);
 
             await interaction.editReply(`Started the race in <#${race.channelId}>`);
         } catch (e) {
@@ -63,7 +64,7 @@ export default class RaceStartSubcommand extends SubcommandInteraction {
 
         switch (focusedValue.name) {
             case "race":
-                await interaction.respond((await client.services.race.getRaces()).filter(race => {
+                await interaction.respond((await client.services.race.list()).filter(race => {
                     return [RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status);
                 }).map(race => {
                     return {name: truncate(race.name, 99, true), value: race._id.toString()}

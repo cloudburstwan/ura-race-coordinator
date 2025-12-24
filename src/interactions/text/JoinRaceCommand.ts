@@ -15,8 +15,16 @@ export default class ResultsCommand extends TextInteraction {
     override async execute(message: Message, regexMatch: RegExpExecArray, client: DiscordClient) {
         let ids = regexMatch[1].split(" ");
 
+        const race = await client.services.race.get(ids[0]);
+
+        if (!race) {
+            await message.react("❌")
+            await message.reply("race not exists");
+            return;
+        }
+
         try {
-            await client.services.race.addRacer(ids[0], ids[2] ? await message.guild.members.fetch(ids[1]) : message.member, ids.splice(2).join(" "), true);
+            await race.addRacer(ids[2] ? (await message.guild.members.fetch(ids[1])).user.id : message.member.user.id, ids.splice(ids[2] ? 2 : 1).join(" "), client, true);
             await message.react("✅");
         } catch (e) {
             await message.react("❌");

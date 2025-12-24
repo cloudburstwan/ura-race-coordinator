@@ -16,8 +16,18 @@ export default class RaceResignButton extends ButtonPressInteraction {
     public id = "race-resign";
 
     async execute(interaction: ButtonInteraction, data: string[], client: DiscordClient): Promise<void> {
+        let race = await client.services.race.get(data[0]);
+
+        if (!race) {
+            await interaction.reply({
+                content: "Whoops! It seems like that race does not exist. Maybe it got destroyed?",
+                flags: MessageFlagsBitField.Flags.Ephemeral
+            });
+            return;
+        }
+
         try {
-            await client.services.race.removeRacer(data[0], interaction.user.id);
+            await race.removeRacer(interaction.user.id, client);
             await interaction.reply({
                 content: "Successfully resigned from the race.\nIf you wish to rejoin, just press the Join Race button again!",
                 flags: MessageFlagsBitField.Flags.Ephemeral
@@ -37,7 +47,7 @@ export default class RaceResignButton extends ButtonPressInteraction {
                             flags: MessageFlagsBitField.Flags.Ephemeral
                         });
                         break;
-                    case "MEMBER_NOT_JOINED":
+                    case "USER_NOT_JOINED":
                         await interaction.reply({
                             content: "You haven't joined this race. You can't resign from a race you haven't joined, silly!",
                             flags: MessageFlagsBitField.Flags.Ephemeral
