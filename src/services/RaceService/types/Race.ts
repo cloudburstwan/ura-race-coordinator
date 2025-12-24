@@ -203,7 +203,7 @@ export default class Race {
         let racer = new Racer(member.id, characterName);
         if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status)) {
             racer.gate = Math.max(...this.racers.map(racer => racer.gate), 0) + 1;
-            racer.favoritePosition = Math.max(...this.racers.map(racer => racer.favoritePosition), 1);
+            racer.favoritePosition = Math.max(...this.racers.map(racer => racer.favoritePosition), 0) + 1;
             racer.status = RacerStatus.Normal; // Assumed present if added after race start.
             racer.assignMood();
         }
@@ -352,6 +352,26 @@ export default class Race {
     }
 }
 
+export function raceStatusToString(status: RaceStatus): string {
+    switch (status) {
+        case RaceStatus.SignupOpen:
+            return "Signups Open";
+        case RaceStatus.SignupClosed:
+            return "Signup Closed";
+        case RaceStatus.Started:
+        case RaceStatus.GateOpen:
+        case RaceStatus.Early:
+        case RaceStatus.Middle:
+        case RaceStatus.Late:
+        case RaceStatus.FinalSpurt:
+            return "Race Ongoing";
+        case RaceStatus.Ended:
+            return "Race Concluded";
+        default:
+            return status;
+    }
+}
+
 export type RaceFlag = "URARA_MEMORIAM" | "WEDDING_BOUQUET_THROW" | "LEGEND_RACE" | "SPECIAL";
 export const RaceFlagOptions: {name: string, value: RaceFlag}[] = [
     { name: "Haru Urara Memoriam", value: "URARA_MEMORIAM" },
@@ -423,5 +443,5 @@ export enum RaceStatus {
     Middle,
     Late,
     FinalSpurt, // End of above!
-    Ended
+    Ended,
 }

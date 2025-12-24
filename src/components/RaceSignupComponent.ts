@@ -1,13 +1,16 @@
 ﻿import Race, {
     DistanceType,
-    RaceStatus,
+    RaceStatus, raceStatusToString,
     SurfaceType,
     TrackConditionType,
     WeatherType
 } from "../services/RaceService/types/Race";
 import {
-    ActionRowBuilder, ButtonBuilder, ButtonStyle,
-    ContainerBuilder, MessageActionRowComponentBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ContainerBuilder,
+    MessageActionRowComponentBuilder,
     SeparatorBuilder,
     SeparatorSpacingSize,
     TextDisplayBuilder
@@ -41,6 +44,10 @@ export default function createRaceSignupComponent(race: Race, client: DiscordCli
             break;
     }
 
+    let statusStr = raceStatusToString(race.status);
+    if (race.status == RaceStatus.SignupOpen && race.racers.length >= race.maxRacers)
+        statusStr = "Signups Closed" // Pretend to be closed if at or over the max racers.
+
     const component = new ContainerBuilder()
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(`## ${emojifyRaceName(race.name, client)}`),
@@ -70,7 +77,7 @@ export default function createRaceSignupComponent(race: Race, client: DiscordCli
             new TextDisplayBuilder().setContent(`**Maximum available slots:** ${race.maxRacers}`),
         )
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`**Status:** ${race.status == RaceStatus.SignupOpen && race.racers.length < race.maxRacers ? "Signups Open" : "Signups Closed"}`),
+            new TextDisplayBuilder().setContent(`**Status:** ${statusStr}`),
         )
         .addSeparatorComponents(
             new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
