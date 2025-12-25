@@ -102,6 +102,8 @@ export default class Race {
         } else {
             let message = await channel.messages.fetch(this.messageReferences.signup);
 
+            console.log(message);
+
             if (message == undefined || message.edit == undefined) {
                 console.warn(`Tried to find message id ${this.messageReferences.signup} in channel id ${channel.id} but could not find it, or could not edit.`);
                 return;
