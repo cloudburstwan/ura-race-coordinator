@@ -18,7 +18,7 @@ export default class ResultsCommand extends TextInteraction {
             if (race == undefined) throw new ReferenceError("Race not found.");
 
             await race.updateRaceSignupMessage(client, false, ids[1] == "1");
-            if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status))
+            if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed, RaceStatus.Cancelled].includes(race.status))
                 await race.updateRaceStartMessage(client);
             await message.react("✅");
         } catch (e) {
