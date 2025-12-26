@@ -226,6 +226,7 @@ export default class Race {
         this.status = RaceStatus.Ended;
 
         await client.services.data.races.updateOne({ _id: this._id }, { $set: this });
+        client.unregisterEventSubscription(`attendance-check-start-${this._id.toString("hex")}`);
 
         await this.updateRaceSignupMessage(client, false, true);
         await this.updateRaceStartMessage(client);
