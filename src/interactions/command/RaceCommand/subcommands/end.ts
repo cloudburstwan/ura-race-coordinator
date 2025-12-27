@@ -1,28 +1,19 @@
 ﻿import SubcommandInteraction from "../../../../types/SubcommandInteraction";
 import {
-    ActionRowBuilder,
-    AutocompleteInteraction, ButtonBuilder, ButtonInteraction, ButtonStyle,
+    AutocompleteInteraction,
+    ButtonStyle,
     ChannelType,
-    ChatInputCommandInteraction, ComponentType,
-    ContainerBuilder,
-    MessageActionRowComponentBuilder,
-    MessageFlagsBitField, PublicThreadChannel,
-    SeparatorBuilder,
+    ChatInputCommandInteraction,
+    ComponentType,
+    MessageFlagsBitField,
     SeparatorSpacingSize,
-    SlashCommandSubcommandBuilder, TextChannel,
-    TextDisplayBuilder
+    SlashCommandSubcommandBuilder
 } from "discord.js";
 import DiscordClient from "../../../../DiscordClient";
-import Race, {
-    MarginType,
-    Placement,
-    RaceFlagOptions,
-    RaceStatus,
-    RaceType
-} from "../../../../services/RaceService/types/Race";
-import {RacerMood} from "../../../../services/RaceService/types/Racer";
-import {numberSuffix, randomInt, truncate} from "../../../../utils";
-import {ObjectId} from "mongodb";
+import {RaceStatus, RaceType} from "../../../../services/RaceService/types/Race";
+import {RacerStatus} from "../../../../services/RaceService/types/Racer";
+import {truncate} from "../../../../utils";
+import createRaceEndMissingRacersComponent from "../../../../components/RaceEndMissingRacersComponent";
 
 export default class RaceEndSubcommand extends SubcommandInteraction {
     public info = new SlashCommandSubcommandBuilder()
@@ -37,7 +28,7 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
 
     public async execute(interaction: ChatInputCommandInteraction, client: DiscordClient): Promise<void> {
         const raceId = interaction.options.getString("race", true);
-        let race = Race.fromDB(await client.services.data.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
+        let race = await client.services.race.get(raceId);
 
         if (!race) {
             await interaction.reply({
@@ -47,10 +38,29 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
             return;
         }
 
-        let results = await race.getResults();
-        await race.end(client);
+        let hasMissingRunners = race.racers.some(racer => racer.status == RacerStatus.NotPresent);
 
-        function generateComponent(locked: boolean) {
+        if (hasMissingRunners) {
+            await interaction.reply({
+                components: [await createRaceEndMissingRacersComponent(race, client)],
+                flags: MessageFlagsBitField.Flags.IsComponentsV2,
+            });
+        } else {
+            // End
+            await race.end(client);
+            let message = await interaction.reply({
+                content: "Successfully internally ended the race. Please generate a race using the following information I have for this race."
+            });
+
+            await (await message.fetch()).reply({
+                content: `\`\`\`\n${race.racers.length == 0 ? "No racers" : race.racers.map(racer => `[#${racer.gate}] ${racer.characterName}${race.type != RaceType.NonGraded ? ` [${racer.mood}] - [RACER ORIGIN] - ${racer.skillRolls.length}` : ""}`).join("\n")}\n-# Race ID: ${race._id.toString()}\n\`\`\``
+            });
+        }
+
+        //let results = await race.getResults();
+
+
+        /*function generateComponent(locked: boolean) {
             const component = new ContainerBuilder()
                 .addTextDisplayComponents(
                     new TextDisplayBuilder().setContent("## Generated Race Results"),
@@ -141,18 +151,10 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
             return component;
         }
 
-        let component = generateComponent(false);
-        let message = await interaction.reply({
-            //components: [ component ],
-            //flags: MessageFlagsBitField.Flags.IsComponentsV2
-            content: "Successfully internally ended the race. Please generate a race using the following information I have for this race."
-        });
+        let component = generateComponent(false);*/
 
-        await (await message.fetch()).reply({
-            content: `\`\`\`\n${race.racers.length == 0 ? "No racers" : race.racers.map(racer => `[#${racer.gate}] ${racer.characterName}${race.type != RaceType.NonGraded ? ` [${racer.mood}] - [RACER ORIGIN] - ${racer.skillRolls.length}` : ""}`).join("\n")}\n-# Race ID: ${race._id.toString()}\n\`\`\``
-        });
 
-        function listenForButtonPress() {
+        /*function listenForButtonPress() {
             message.awaitMessageComponent({
                 filter: (i) => {
                     return i.user.id == interaction.user.id
@@ -209,14 +211,14 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
 
             async function showScores() {
                 // TODO: Show result scoreboard.
-                /*const scoreboard = await ImageService.drawScoreboard(ScoreStatus.Final, results.map(result => result.gate), SurfaceType.Turf, "haru_final");
+                const scoreboard = await ImageService.drawScoreboard(ScoreStatus.Final, results.map(result => result.gate), SurfaceType.Turf, "haru_final");
 
                 const attachment = new AttachmentBuilder(scoreboard)
                     .setName("scoreboard.png");
 
                 let finalScoreboard = await channel.send({
                     files: [ attachment ]
-                });*/
+                });
 
                 const component = new ContainerBuilder()
                     .addTextDisplayComponents(
@@ -282,10 +284,10 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
                     component.setAccentColor(16745656);
 
                 setTimeout(async () => {
-                    /*await finalScoreboard.reply({
+                    await finalScoreboard.reply({
                         components: [ component ],
                         flags: MessageFlagsBitField.Flags.IsComponentsV2
-                    });*/
+                    });
                 }, 3000);
             }
 
@@ -298,7 +300,7 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
             } else {
                 setTimeout(async () => await showScores(), (randomInt(15000, 60000)));
             }
-        }
+        }*/
 
         //listenForButtonPress();
     }
