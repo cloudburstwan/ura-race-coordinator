@@ -18,12 +18,12 @@ export default class RaceResignButton extends ButtonPressInteraction {
     public id = "end-race-no";
 
     async execute(interaction: ButtonInteraction, data: string[], client: DiscordClient): Promise<void> {
+        await interaction.deferReply();
         let race = await client.services.race.get(data[0]);
 
         if (!race) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: "Whoops! It seems like that race does not exist. Maybe it got destroyed?",
-                flags: MessageFlagsBitField.Flags.Ephemeral
             });
             return;
         }
@@ -33,9 +33,8 @@ export default class RaceResignButton extends ButtonPressInteraction {
             flags: MessageFlagsBitField.Flags.IsComponentsV2,
         });
 
-        await interaction.reply({
+        await interaction.editReply({
             content: "Cancelled the race end.",
-            flags: MessageFlagsBitField.Flags.Ephemeral,
         });
     }
 }

@@ -18,18 +18,18 @@ export default class RaceResignButton extends ButtonPressInteraction {
     public id = "end-race-yes";
 
     async execute(interaction: ButtonInteraction, data: string[], client: DiscordClient): Promise<void> {
+        await interaction.deferReply();
         let race = await client.services.race.get(data[0]);
 
         if (!race) {
-            await interaction.reply({
-                content: "Whoops! It seems like that race does not exist. Maybe it got destroyed?",
-                flags: MessageFlagsBitField.Flags.Ephemeral
+            await interaction.editReply({
+                content: "Whoops! It seems like that race does not exist. Maybe it got destroyed?"
             });
             return;
         }
 
         await race.end(client);
-        let message = await interaction.reply({
+        let message = await interaction.editReply({
             content: "Successfully internally ended the race. Please generate a race using the following information I have for this race."
         });
 
