@@ -1,4 +1,6 @@
 ﻿import {
+    ApplicationCommand,
+    ApplicationCommandOptionType,
     ApplicationEmoji,
     AutocompleteInteraction,
     ButtonInteraction,
@@ -233,12 +235,14 @@ export default class DiscordClient extends Client {
     }
 
     public unregisterEventSubscription(subscriptionName: string) {
-        console.log(`Unregistered a subscription named ${subscriptionName}`);
         let subscription = this.eventSubscriptions.get(subscriptionName);
+
+        if (!subscription) return; // Already cancelled
 
         this.removeListener(subscription.event, subscription.callback);
 
         this.eventSubscriptions.delete(subscriptionName);
+        console.log(`Unregistered a subscription named ${subscriptionName}`);
     }
 
     public getEmojiString(name: string) {
@@ -255,6 +259,33 @@ export default class DiscordClient extends Client {
         let emojiStrings = emojis.map(emoji => `<:${emoji.name}:${emoji.id}>`);
 
         return emojiStrings.join("");
+    }
+
+    public async getCommandString(...name: string[]) {
+        let commands = await this.guild.commands.fetch();
+        let id: Snowflake;
+        let fullName: string;
+
+        commands.forEach((command) => {
+            if (id) return;
+
+            if (name.length == 1) {
+                id = command.id;
+                fullName = command.name;
+            }
+
+            // Get full name from subcommands.
+            command.options.filter(option => [ApplicationCommandOptionType.Subcommand].includes(option.type)).forEach(option => {
+                if ([command.name, option.name].join("/") == name.join("/")) {
+                    id = command.id;
+                    fullName = `${command.name} ${option.name}`
+                }
+            });
+        });
+
+        if (!id) return `/${name.join(" ")}`;
+
+        return `</${fullName}:${id}>`;
     }
 
     async init() {
