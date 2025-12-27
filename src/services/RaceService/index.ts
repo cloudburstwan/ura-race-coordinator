@@ -26,8 +26,11 @@ export default class RaceService {
         this.Client = client;
     }
 
-    public async get(raceId: string): Promise<Race> {
-        return Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(raceId) }));
+    public async get(search: string): Promise<Race> {
+        if (search.length != 24) {
+            return Race.fromDB(await this.DataService.races.findOne({ name: search }));
+        }
+        return Race.fromDB(await this.DataService.races.findOne({ _id: ObjectId.createFromHexString(search) }));
     }
 
     public async list() {
