@@ -22,9 +22,9 @@ export default async function createRaceEndMissingRacersComponent(race: Race, cl
             new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
         );
 
-    for (let racerIndex in race.racers.filter(racer => racer.status == RacerStatus.NotPresent)) {
+    for (let racer of race.racers.filter(racer => racer.status == RacerStatus.NotPresent)) {
         component.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`[#${race.racers[racerIndex].gate}] **${race.racers[racerIndex].characterName}** (<@${race.racers[racerIndex].memberId}>)`),
+            new TextDisplayBuilder().setContent(`[#${racer.gate}] **${racer.characterName}** (<@${racer.memberId}>)`),
         );
     }
 
