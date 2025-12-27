@@ -27,6 +27,7 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
         )
 
     public async execute(interaction: ChatInputCommandInteraction, client: DiscordClient): Promise<void> {
+        await interaction.deferReply();
         const raceId = interaction.options.getString("race", true);
         let race = await client.services.race.get(raceId);
 
@@ -41,14 +42,14 @@ export default class RaceEndSubcommand extends SubcommandInteraction {
         let hasMissingRunners = race.racers.some(racer => racer.status == RacerStatus.NotPresent);
 
         if (hasMissingRunners) {
-            await interaction.reply({
+            await interaction.editReply({
                 components: [await createRaceEndMissingRacersComponent(race, client)],
                 flags: MessageFlagsBitField.Flags.IsComponentsV2,
             });
         } else {
             // End
             await race.end(client);
-            let message = await interaction.reply({
+            let message = await interaction.editReply({
                 content: "Successfully internally ended the race. Please generate a race using the following information I have for this race."
             });
 
