@@ -351,11 +351,10 @@ export default class Race {
                 takenFavoritePositions.push(favorite);
 
                 return Object.assign({ favoritePosition: favorite }, racer);
-            })
-            .sort((racer1, racer2) => racer1.favoritePosition < racer2.favoritePosition ? -1 : 1);
+            });
 
         for (let index in this.racers) {
-            this.racers[index].favoritePosition = racersWithFavorites.findIndex(racer => racer.memberId == this.racers[index].memberId && racer.characterName == this.racers[index].characterName)
+            this.racers[index].favoritePosition = racersWithFavorites.find(racer => racer.memberId == this.racers[index].memberId && racer.characterName == this.racers[index].characterName).favoritePosition
         }
     }
 
