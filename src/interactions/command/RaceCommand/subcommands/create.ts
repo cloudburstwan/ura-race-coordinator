@@ -41,8 +41,8 @@ export default class RaceCreateSubcommand extends SubcommandInteraction {
             .setRequired(true)
         )
         .addNumberOption(option => option
-            .setName("start-at-seconds")
-            .setDescription("The time to start at. Uses the numbers in Discords timestamp system")
+            .setName("start-at-unix")
+            .setDescription("The time to start at. Uses a Unix Timestamp (search it up)")
             .setRequired(true)
         )
         .addStringOption(option => option
@@ -111,7 +111,7 @@ export default class RaceCreateSubcommand extends SubcommandInteraction {
                 raceType = RaceType.NonGraded;
         }
         let channel = interaction.options.getChannel("race-channel", true);
-        let start = new Date(interaction.options.getNumber("start-at-seconds", true) * 1000);
+        let start = new Date(interaction.options.getNumber("start-at-unix", true) * 1000);
         let surface: SurfaceType;
         switch (interaction.options.getString("surface", true)) {
             case "turf":
