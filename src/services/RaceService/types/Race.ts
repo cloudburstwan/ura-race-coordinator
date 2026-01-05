@@ -165,7 +165,11 @@ export default class Race {
         if (![RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(this.status))
             throw new RaceError("RACE_IN_PROGRESS_OR_OVER", "Cannot cancel a race that is in progress or already over");
 
-        await this.updateRaceSignupMessage(client, false, false);
+        try {
+            await this.updateRaceSignupMessage(client, false, false);
+        } catch(err: any) {
+            console.warn(`Encountered error while trying to update the Race Signup message for race id ${this._id.toString("hex")}: ${err.message}`);
+        }
 
         this.status = RaceStatus.Cancelled;
 
