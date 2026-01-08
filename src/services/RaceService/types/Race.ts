@@ -354,7 +354,7 @@ export default class Race {
 
                 takenFavoritePositions.push(favorite);
 
-                return Object.assign({ favoritePosition: favorite }, racer);
+                return Object.assign(racer, { favoritePosition: favorite });
             });
 
         for (let index in this.racers) {
