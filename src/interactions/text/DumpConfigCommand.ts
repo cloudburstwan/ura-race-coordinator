@@ -5,8 +5,8 @@ import {RacerMood} from "../../services/RaceService/types/Racer";
 
 export default class DumpConfigCommand extends TextInteraction {
     public info = new TextCommandBuilder()
-        .setName("joinRace")
-        .setRegexMatch(/!joinRace (.+)/g)
+        .setName("dumpConfig")
+        .setRegexMatch(/!dumpConfig/g)
         .addRole(process.env.RACE_STAFF_ROLE_ID);
 
     override async execute(message: Message, regexMatch: RegExpExecArray, client: DiscordClient) {
