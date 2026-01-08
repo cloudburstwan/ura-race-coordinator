@@ -1,6 +1,7 @@
 ﻿import Race, {
     DistanceType,
-    RaceStatus, raceStatusToString,
+    RaceStatus,
+    raceStatusToString,
     SurfaceType,
     TrackConditionType,
     WeatherType
@@ -16,7 +17,7 @@ import {
     TextDisplayBuilder
 } from "discord.js";
 import DiscordClient from "../DiscordClient";
-import {emojifyRaceName} from "../utils";
+import {emojifyRaceName, surfaceToText} from "../utils";
 
 export default function createRaceSignupComponent(race: Race, client: DiscordClient, useGate: boolean) {
     let surfaceEmoji: string;
@@ -26,6 +27,9 @@ export default function createRaceSignupComponent(race: Race, client: DiscordCli
             break;
         case SurfaceType.Turf:
             surfaceEmoji = client.getEmojiString("surface_turf");
+            break;
+        case SurfaceType.Asphalt:
+            surfaceEmoji = client.getEmojiString("surface_asphalt");
             break;
     }
     let weatherEmoji: string;
@@ -62,7 +66,7 @@ export default function createRaceSignupComponent(race: Race, client: DiscordCli
             new TextDisplayBuilder().setContent(`**Time:** ${race.flag == "WEDDING_BOUQUET_THROW" ? "When the vows are said, the rings worn, and the kisses given." : `<t:${Math.floor(race.startingTimestamp / 1000)}:F>`}`),
         )
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`**Surface:** ${surfaceEmoji} ${race.surface == SurfaceType.Dirt ? "Dirt" : "Turf"}`),
+            new TextDisplayBuilder().setContent(`**Surface:** ${surfaceEmoji} ${surfaceToText(race.surface)}`),
         )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(`**Distance**: ${race.distanceMetres}M (${DistanceType[race.distance]})`),

@@ -504,7 +504,8 @@ export enum RaceType {
 
 export enum SurfaceType {
     Dirt,
-    Turf
+    Turf,
+    Asphalt
 }
 export enum DistanceType {
     Sprint,

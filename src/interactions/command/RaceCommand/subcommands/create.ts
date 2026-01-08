@@ -51,7 +51,8 @@ export default class RaceCreateSubcommand extends SubcommandInteraction {
             .setRequired(true)
             .addChoices([
                 { name: "Turf", value: "turf" },
-                { name: "Dirt", value: "dirt" }
+                { name: "Dirt", value: "dirt" },
+                { name: "Asphalt", value: "asphalt" }
             ])
         )
         .addNumberOption(option => option
@@ -114,6 +115,9 @@ export default class RaceCreateSubcommand extends SubcommandInteraction {
         let start = new Date(interaction.options.getNumber("start-at-unix", true) * 1000);
         let surface: SurfaceType;
         switch (interaction.options.getString("surface", true)) {
+            case "asphalt":
+                surface = SurfaceType.Asphalt;
+                break;
             case "turf":
                 surface = SurfaceType.Turf;
                 break;

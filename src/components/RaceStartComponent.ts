@@ -11,7 +11,7 @@ import {
 } from "discord.js";
 import {RacerMood, RacerStatus} from "../services/RaceService/types/Racer";
 import DiscordClient from "../DiscordClient";
-import {emojifyRaceName, numberSuffix} from "../utils";
+import {emojifyRaceName, numberSuffix, surfaceToText} from "../utils";
 
 export default function createRaceStartComponent(race: Race, client: DiscordClient) {
     let condition: string;
@@ -62,7 +62,7 @@ export default function createRaceStartComponent(race: Race, client: DiscordClie
 
     const component = new ContainerBuilder()
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`## ${emojifyRaceName(race.name, client)}\nIt's time for the race to begin. We will be racing on **${race.surface == SurfaceType.Turf ? "Turf" : "Dirt"}** (condition: **${condition}**) for a distance of **${race.distanceMetres} meters (${distanceName})**. It is **${weather}**.\n\n### Our contestants today are...`),
+            new TextDisplayBuilder().setContent(`## ${emojifyRaceName(race.name, client)}\nIt's time for the race to begin. We will be racing on **${surfaceToText(race.surface)}** (condition: **${condition}**) for a distance of **${race.distanceMetres} meters (${distanceName})**. It is **${weather}**.\n\n### Our contestants today are...`),
         );
 
     if (race.flag == "URARA_MEMORIAM")

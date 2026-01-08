@@ -1,7 +1,7 @@
 ﻿import {AptitudeLevel} from "../services/RaceService/types/Character";
 import DiscordClient from "../DiscordClient";
-import {CollectorFilter, DMChannel, Message, TextChannel} from "discord.js";
-import {Collection} from "mongodb";
+import {DMChannel, Message, TextChannel} from "discord.js";
+import {SurfaceType} from "../services/RaceService/types/Race";
 
 /**
  * Get a random Umamusume name from a preset list of known Umamusume.
@@ -26,6 +26,17 @@ export function calculateSkillBonus(rolls: number[]) {
     const overusePenalty = alpha * Math.pow(Math.max(0, rolls.length - N0), p);
 
     return Math.max(0, base - lowPenalty - overusePenalty);
+}
+
+export function surfaceToText(surface: SurfaceType) {
+    switch (surface) {
+        case SurfaceType.Dirt:
+            return "Dirt";
+        case SurfaceType.Turf:
+            return "Turf";
+        case SurfaceType.Asphalt:
+            return "Asphalt";
+    }
 }
 
 export function aptitudeToText(aptitude: AptitudeLevel): string {
