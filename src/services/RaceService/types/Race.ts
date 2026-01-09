@@ -322,28 +322,34 @@ export default class Race {
             let position = 0;
             switch (client.config.overrides.favorite[identifier]) {
                 case "L": // Always last place
-                    position = this.racers.length;
+                    position = this.racers.length-1;
                     break;
                 default:
                     position = client.config.overrides.favorite[identifier];
             }
 
-            takenFavoritePositions.push(position);
+            if (this.racers.some(racer => racer.memberId == identifier.split("/")[0] && racer.characterName == identifier.split("/")[1]))
+                takenFavoritePositions.push(position);
         }
 
         let racersWithFavorites = this.racers
             .map(racer => {
                 let possibleFavoritePositions = [];
 
+                console.log(this.racers.length);
+                console.log(takenFavoritePositions);
+
                 for (let i = 0; i < this.racers.length; i++) {
-                    if (!takenFavoritePositions.includes(i+1))
-                        possibleFavoritePositions.push(i+1);
+                    if (!takenFavoritePositions.includes(i))
+                        possibleFavoritePositions.push(i);
                 }
+
+                console.log(possibleFavoritePositions);
 
                 let favorite = possibleFavoritePositions[Math.floor(Math.random() * possibleFavoritePositions.length)];
 
                 if (this.flag == "LEGEND_RACE" && racer.memberId == client.config.users.legend_racer) {
-                    favorite = 1;
+                    favorite = 0;
                 }
 
                 if (Object.keys(client.config.overrides.favorite).includes(`${racer.memberId}/${racer.characterName}`) && this.flag != "LEGEND_RACE") {
@@ -353,6 +359,8 @@ export default class Race {
                 }
 
                 takenFavoritePositions.push(favorite);
+
+                console.log(favorite);
 
                 return Object.assign(racer, { favoritePosition: favorite });
             });
