@@ -59,7 +59,7 @@ export default class RaceCreateSubcommand extends SubcommandInteraction {
             .setName("distance")
             .setDescription("The distance of the race in metres.")
             .setMinValue(1)
-            .setMaxValue(9999)
+            .setMaxValue(99999)
             .setRequired(true)
         )
         .addStringOption(option => option
