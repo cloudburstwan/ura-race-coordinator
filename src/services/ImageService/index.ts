@@ -3,7 +3,7 @@ import {createCanvas, Image, loadImage} from "canvas";
 import {DistanceType, MarginType, RaceType, TrackConditionType} from "../RaceService/types/Race";
 import {addLeadingZero, randomInt, roundToQuarter} from "../../utils";
 
-const baseUrl = "https://s3.cloudburst.lgbt/race-assets";
+const baseUrl = "https://s3-old.cloudburst.lgbt/race-assets";
 const imagePositions = {
     raceNumber: [176, 56],
     state: [321, 48],
