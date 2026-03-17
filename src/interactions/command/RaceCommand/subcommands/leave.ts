@@ -80,7 +80,7 @@ export default class RaceLeaveSubcommand extends SubcommandInteraction {
                     return {name: truncate(race.name, 99, true), value: race._id.toString()}
                 }).filter(race => {
                     return race.name.includes(focusedValue.value);
-                }));
+                }).splice(0, 20));
                 break;
             default:
                 await interaction.respond([]);
