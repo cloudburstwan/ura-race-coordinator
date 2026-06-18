@@ -52,7 +52,7 @@ export default class RaceCancelSubcommand extends SubcommandInteraction {
 
             await race.cancel(client);
 
-            await interaction.editReply(`Cancelled the race with ID \`${race._id.toString("hex")}\``);
+            await interaction.editReply(`Cancelled the race with ID \`${race._id!.toString("hex")}\``);
         } catch (e) {
             console.error("your fault for speedcoding this grass");
             console.error(e);
@@ -66,9 +66,9 @@ export default class RaceCancelSubcommand extends SubcommandInteraction {
         switch (focusedValue.name) {
             case "race":
                 await interaction.respond((await client.services.race.list()).filter(race => {
-                    return [RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race.status);
+                    return [RaceStatus.SignupOpen, RaceStatus.SignupClosed].includes(race!.status);
                 }).map(race => {
-                    return {name: truncate(race.name, 99, true), value: race._id.toString()}
+                    return {name: truncate(race!.name, 99, true), value: race!._id!.toString()}
                 }).filter(race => {
                     return race.name.includes(focusedValue.value);
                 }).splice(0, 20));
